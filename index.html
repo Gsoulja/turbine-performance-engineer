@@ -128,6 +128,21 @@ section.part:first-of-type { border-top: 0; }
 .presenter-note b { color: var(--fg); font-weight: 600; }
 .subhead { margin-top: clamp(28px, 4vw, 40px); margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
 
+/* connect a model */
+.connect { margin-top: clamp(32px, 5vw, 48px); overflow-wrap: anywhere; }
+.connect .steps > li { min-width: 0; }
+.connect .steps { margin: 0; padding-left: 1.4em; max-width: var(--col); display: grid; gap: 14px; }
+.connect .steps li::marker { color: var(--accent); font-weight: 700; }
+.connect pre { margin: 8px 0 0; padding: 12px 14px; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; overflow-x: auto; font: 0.84rem/1.5 var(--mono); color: var(--fg); }
+.connect code { font-family: var(--mono); font-size: 0.9em; }
+.connect pre code { font-size: inherit; }
+.connect-grid { display: grid; gap: 24px; margin-top: 24px; }
+.connect-grid > div { min-width: 0; }
+.connect-grid p { margin: 10px 0 0; }
+.connect .subhead p { max-width: var(--col); }
+.connect-grid h4 { margin: 0 0 6px; font: 600 1rem var(--head); }
+@media (min-width: 900px) { .connect-grid { grid-template-columns: 1fr 1fr; } }
+
 /* embedded deck and demo */
 .frame { position: relative; width: 100%; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--rule); background: #0A141E; }
 .frame.deck { aspect-ratio: 16 / 9; }
@@ -283,7 +298,7 @@ footer.end .inner { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-conte
   <div class="inner">
     <div class="head"><p class="eyebrow">The demo</p><h2>The whole loop, in one tool</h2><p>A replay of real turbine data with the models’ answers, each beside its independent checks. Walk the loop: the 3D farm view (detect), “Where did the energy go?” (explain), “Fix first” and the Copilot (act), “Did the fix work?” (verify) and “Real results” (learn). Without satellite imagery, the 3D view uses generated ground. The Copilot runs when the monitor is opened on claude.ai.</p></div>
     <div class="frame demo"><iframe id="demoFrame" src="demo/index.html" title="Wind farm monitor demo" loading="lazy"></iframe></div>
-    <div class="bar"><span class="count">Replay · real data</span><a class="tool" href="demo/index.html" target="_blank" rel="noopener">Open the demo full screen</a></div>
+    <div class="bar"><span class="count">Replay · real data</span><a class="tool" href="demo/index.html" target="_blank" rel="noopener">Open the demo full screen</a><a class="tool" href="#connect">Connect your model</a></div>
     <div class="cards">
       <article><p class="k">Detect · Hill of Towie</p><p>The language model’s daily stop answers, 3–9 July 2023: <b>20 of 25 stops caught, 0 false alarms</b>. The 5 misses were short stops.</p></article>
       <article><p class="k">Curtailment · Hill of Towie</p><p>25–31 May 2025: <b>77 of 84 grid-dispatch turbine-days caught</b>, with 4 false alarms.</p></article>
@@ -292,6 +307,39 @@ footer.end .inner { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-conte
       <article><p class="k">Act · Fix first</p><p>Turbines ranked by <b>money at stake</b>; the Copilot drafts the work order, and a person approves it.</p></article>
       <article><p class="k">Verify · Turbine 13</p><p>The real before/after series of the AeroUp blade upgrade, with both references.</p></article>
       <article><p class="k">Learn · Real results</p><p>Mark an answer <b>Correct</b>, <b>Wrong cause</b> or <b>Not a problem</b>. It stays pending until independent evidence agrees.</p></article>
+    </div>
+    <div class="connect" id="connect">
+      <div class="subhead"><h3>Connect a model to the demo</h3><p class="small muted">The monitor runs on stand-in rules until a model answers. Any model can take over, ours or yours: it sends one small JSON message per 10-minute step, and the page shows its status, explanation and confidence in place of the rules, turbine by turbine.</p></div>
+      <ol class="steps">
+        <li><b>Get the bridge.</b> One Python file, standard library only. It reads the same real Hill of Towie rows the demo replays (2–10 July 2023, 21 turbines).
+          <pre><code>curl -O https://turbine-performance-engineer.vercel.app/connect/bridge.py</code></pre></li>
+        <li><b>Put your model in <code>predict_day()</code>.</b> It receives one turbine-day of 10-minute rows (power, wind speed, rotor speed, pitch and nacelle direction) and returns an answer for each step it covers. It ships with a stand-in rule, so you can test the connection before your model is ready.</li>
+        <li><b>Run it.</b>
+          <pre><code>python3 bridge.py
+# 540 messages for 21 turbines
+# Serving at http://localhost:8790/latest</code></pre></li>
+        <li><b>Open the demo with your feed:</b> <a href="https://turbine-performance-engineer.vercel.app/demo/?model=http://localhost:8790/latest" target="_blank" rel="noopener">demo/?model=http://localhost:8790/latest</a>. Choose <b>Hill of Towie</b> and press <b>Replay the real rows</b>. If the browser asks to allow access to your local network, allow it. Turbines your model covers show its answer, cause and confidence; the others keep the stand-in rules. <b>Model feed</b> counts the messages received.</li>
+      </ol>
+      <p class="small muted" style="max-width: var(--col); margin-top: 14px">No server? Run <code>python3 bridge.py --out feed.jsonl</code>, then open <b>Model feed</b> in the demo and load the file.</p>
+      <div class="connect-grid">
+        <div>
+          <h4>An example message</h4>
+          <pre><code>{ "schema": "windmonitor.model/1",
+  "farm": "towie", "time": "2023-07-09T15:30:00Z",
+  "model": { "name": "my-model", "version": "1" },
+  "turbines": {
+    "T12": { "status": "stopped", "cause": "turbine fault",
+             "confidence": 0.93,
+             "diagnosis": "Stopped since 13:10 at 11 m/s.",
+             "evidence": ["power 0 kW", "rotor 0 rpm"] } } }</code></pre>
+          <p class="small muted">The status is one of normal, stopped, curtailed, low or sensor; everything else is optional. With <code>expected_kw</code>, the lost energy is computed from your model's own expectation. The full contract: <a href="https://turbine-performance-engineer.vercel.app/demo/MODEL_FEED.md" target="_blank" rel="noopener">MODEL_FEED.md</a>.</p>
+        </div>
+        <div>
+          <h4>Using our models</h4>
+          <p class="small">The five trained models are on <a href="https://huggingface.co/collections/gsoulja/sololeveling-wind-turbine-performance-engineer-6b031e0b75d3cb2072628436" target="_blank" rel="noopener">Hugging Face</a>. Each answers one question per turbine-day from six signals: power, wind speed, rotor speed, pitch, nacelle direction and temperature. The demo rows carry the first five; the full rows come from TimeNet's Hill of Towie connector (<a href="https://github.com/OpenTSLM/TimeNet/pull/838" target="_blank" rel="noopener">PR #838</a>). To show a day-level answer in the monitor, follow the comments in <code>predict_day()</code>: when the model says yes, answer for the steps where the turbine stood still, with its probability as the confidence.</p>
+          <p class="small muted">The weights load into OpenTSLM-SP with a frozen Llama-3.2-1B. The stops and joint models also need our fusion adapter, and the prompts and data preparation aren't public. To run them, <a href="https://github.com/Gsoulja/turbine-performance-engineer/issues" target="_blank" rel="noopener">ask us in the GitHub repo</a>.</p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
