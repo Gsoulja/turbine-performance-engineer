@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Turbine Performance Engineer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="A performance engineer for every wind turbine: the pitch, the live monitor demo, every held-out result and what we learned, on one page.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a turbine-day logbook. One reading column near 68ch, figures (deck, demo, charts) break out wide, a sticky section index on top.
+   Palette and faces come from the pitch deck so page, deck and monitor read as one product. */
+:root {
+  --bg: #F5F4EF; --surface: #E9ECE8; --fg: #14212E; --muted: #4A5763; --rule: #CBD2CF;
+  --accent: #96560C;            /* text-safe amber on paper */
+  --ours: #B4650E; --tree: #1F66AD; /* chart series, validated: light, surface #F5F4EF */
+  --band: #0F1D2B; --band-2: #172A3C; --band-fg: #F1F3EE; --band-muted: #B9C6CF; --band-accent: #F0A23B; --band-rule: #2E4256; --band-line: #9FB0BD;
+  --good: #2F6B3A; --warn: #8A5A00;
+  --head: "Space Grotesk", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --col: 68ch; --wide: 1180px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1D2B; --surface: #172A3C; --fg: #F1F3EE; --muted: #B9C6CF; --rule: #2E4256;
+    --accent: #F0A23B; --ours: #C9802A; --tree: #3F8DCB;
+    --band: #0A141E; --band-2: #13212F; --band-rule: #26394B;
+    --good: #7CC48A; --warn: #F0C062; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1D2B; --surface: #172A3C; --fg: #F1F3EE; --muted: #B9C6CF; --rule: #2E4256;
+  --accent: #F0A23B; --ours: #C9802A; --tree: #3F8DCB;
+  --band: #0A141E; --band-2: #13212F; --band-rule: #26394B;
+  --good: #7CC48A; --warn: #F0C062; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 17px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 3px; }
+a:hover { text-decoration-color: currentColor; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.inner { max-width: var(--wide); margin: 0 auto; }
+.col { max-width: var(--col); }
+h1, h2, h3 { font-family: var(--head); text-wrap: balance; margin: 0; }
+h1 { font-weight: 700; font-size: clamp(2.3rem, 5.6vw, 4.4rem); line-height: 1.02; letter-spacing: -0.02em; }
+h2 { font-weight: 600; font-size: clamp(1.65rem, 3.2vw, 2.35rem); line-height: 1.12; letter-spacing: -0.01em; }
+h3 { font-weight: 600; font-size: 1.22rem; line-height: 1.25; }
+p { margin: 0; }
+.eyebrow { font: 600 0.78rem/1.2 var(--body); letter-spacing: 0.09em; text-transform: uppercase; color: var(--accent); }
+.lede { font-size: 1.18rem; line-height: 1.55; }
+.muted { color: var(--muted); }
+.small { font-size: 0.9rem; line-height: 1.5; }
+.num { font-variant-numeric: tabular-nums; }
+.mono { font-family: var(--mono); }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+
+/* top index */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--band) 94%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--band-rule); color: var(--band-fg); }
+.top .inner { display: flex; align-items: center; gap: 20px; min-height: 56px; }
+.brand { font: 600 0.98rem/1 var(--head); white-space: nowrap; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+.brand svg { flex: none; }
+.top nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin-left: auto; min-width: 0; }
+.top nav::-webkit-scrollbar { display: none; }
+.top nav a { font: 500 0.88rem/1 var(--body); color: var(--band-muted); text-decoration: none; padding: 10px 10px; border-radius: 6px; white-space: nowrap; }
+.top nav a:hover, .top nav a.on { color: var(--band-fg); background: var(--band-2); }
+@media (max-width: 640px) { .brand span { display: none; } }
+
+/* hero band */
+.band { background: var(--band); color: var(--band-fg); }
+.band .eyebrow { color: var(--band-accent); }
+.band .muted { color: var(--band-muted); }
+.hero { padding-block: clamp(40px, 7vw, 80px) clamp(32px, 5vw, 56px); }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(28px, 5vw, 64px); align-items: center; }
+@media (max-width: 920px) { .hero-grid { grid-template-columns: minmax(0, 1fr); } }
+.hero .lede { margin-top: 20px; max-width: 34em; color: var(--band-fg); }
+.cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; font: 600 0.95rem/1 var(--body); padding: 13px 18px; border-radius: 8px; text-decoration: none; border: 1px solid var(--band-rule); color: var(--band-fg); background: var(--band-2); cursor: pointer; }
+.btn.primary { background: var(--band-accent); color: #0F1D2B; border-color: var(--band-accent); }
+.btn:hover { filter: brightness(1.08); }
+.day { background: var(--band-2); border: 1px solid var(--band-rule); border-radius: 12px; padding: 18px 18px 14px; position: relative; }
+.day h3 { font-size: 0.98rem; font-family: var(--body); font-weight: 600; }
+.day .cap { margin-top: 10px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.82rem; margin-top: 6px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+
+/* scoreboard */
+.score { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--band-rule); margin-top: clamp(32px, 5vw, 52px); }
+.score div { padding: 20px 20px 4px 0; display: flex; flex-direction: column; gap: 6px; }
+.score div + div { padding-left: 20px; border-left: 1px solid var(--band-rule); }
+.score b { font: 700 clamp(2rem, 4vw, 2.9rem)/1 var(--head); letter-spacing: -0.02em; color: var(--band-accent); font-variant-numeric: tabular-nums; }
+.score span { font-size: 0.92rem; line-height: 1.4; }
+.score em { font-style: normal; font-size: 0.82rem; color: var(--band-muted); }
+@media (max-width: 900px) { .score { grid-template-columns: repeat(2, minmax(0, 1fr)); } .score div:nth-child(3) { padding-left: 0; border-left: 0; } .score div:nth-child(n+3) { border-top: 1px solid var(--band-rule); } }
+@media (max-width: 460px) { .score { grid-template-columns: minmax(0, 1fr); } .score div, .score div + div { padding-left: 0; border-left: 0; } .score div + div { border-top: 1px solid var(--band-rule); } }
+
+/* sections */
+section.part { padding-block: clamp(48px, 8vw, 96px); border-top: 1px solid var(--rule); }
+section.part:first-of-type { border-top: 0; }
+.head { display: flex; flex-direction: column; gap: 12px; margin-bottom: clamp(24px, 4vw, 40px); }
+.head p { max-width: var(--col); color: var(--muted); }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(24px, 4vw, 48px); }
+.three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(20px, 3vw, 36px); }
+@media (max-width: 860px) { .two, .three { grid-template-columns: minmax(0, 1fr); } }
+.fact { display: flex; flex-direction: column; gap: 8px; padding-top: 16px; border-top: 3px solid var(--accent); }
+.fact b { font: 700 2.2rem/1 var(--head); letter-spacing: -0.02em; color: var(--accent); font-variant-numeric: tabular-nums; }
+.src { font-size: 0.82rem; color: var(--muted); }
+
+/* the loop: a real sequence, so it is numbered */
+.loop { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; counter-reset: step; }
+.loop li { counter-increment: step; padding: 18px 20px 18px 0; display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--rule); }
+.loop li + li { padding-left: 20px; border-left: 1px solid var(--rule); }
+.loop li::before { content: counter(step); font: 600 0.8rem/1 var(--mono); color: var(--accent); }
+@media (max-width: 1000px) { .loop { grid-template-columns: minmax(0, 1fr); } .loop li, .loop li + li { padding-left: 0; border-left: 0; } }
+.parts { margin-top: clamp(28px, 4vw, 44px); }
+.parts article { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.parts .k { font: 500 0.78rem/1.2 var(--mono); color: var(--muted); letter-spacing: 0.02em; }
+
+/* pitch video */
+.video { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; background: #0A141E; border: 1px solid var(--rule); }
+.presenter-note { margin-top: 14px; max-width: var(--col); font-size: 0.92rem; line-height: 1.55; color: var(--muted); border-left: 3px solid var(--accent); padding: 2px 0 2px 14px; }
+.presenter-note b { color: var(--fg); font-weight: 600; }
+.subhead { margin-top: clamp(28px, 4vw, 40px); margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
+
+/* connect a model */
+.connect { margin-top: clamp(32px, 5vw, 48px); overflow-wrap: anywhere; }
+.connect .steps > li { min-width: 0; }
+.connect .steps { margin: 0; padding-left: 1.4em; max-width: var(--col); display: grid; gap: 14px; }
+.connect .steps li::marker { color: var(--accent); font-weight: 700; }
+.connect pre { margin: 8px 0 0; padding: 12px 14px; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; overflow-x: auto; font: 0.84rem/1.5 var(--mono); color: var(--fg); }
+.connect code { font-family: var(--mono); font-size: 0.9em; }
+.connect pre code { font-size: inherit; }
+.connect-grid { display: grid; gap: 24px; margin-top: 24px; }
+.connect-grid > div { min-width: 0; }
+.connect-grid p { margin: 10px 0 0; }
+.connect .subhead p { max-width: var(--col); }
+.connect-grid h4 { margin: 0 0 6px; font: 600 1rem var(--head); }
+@media (min-width: 900px) { .connect-grid { grid-template-columns: 1fr 1fr; } }
+
+/* embedded deck and demo */
+.frame { position: relative; width: 100%; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--rule); background: #0A141E; }
+.frame.deck { aspect-ratio: 16 / 9; }
+.frame.demo { height: clamp(560px, 82vh, 880px); background: #0F1D2B; }
+.frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 12px; }
+.bar button, .bar a.tool { font: 500 0.9rem/1 var(--body); color: var(--fg); background: var(--surface); border: 1px solid var(--rule); border-radius: 7px; padding: 10px 14px; cursor: pointer; text-decoration: none; }
+.bar button:hover, .bar a.tool:hover { border-color: var(--muted); }
+.bar .count { font: 500 0.88rem/1 var(--mono); color: var(--muted); margin-right: auto; padding-left: 4px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 0; margin-top: 24px; border-top: 1px solid var(--rule); }
+.cards article { padding: 16px 18px 16px 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cards .k { font: 600 0.74rem/1.2 var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+
+/* results */
+.q { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: clamp(24px, 4vw, 56px); padding-block: 28px; border-top: 1px solid var(--rule); }
+.q:first-of-type { border-top: 0; padding-top: 0; }
+@media (max-width: 900px) { .q { grid-template-columns: minmax(0, 1fr); } }
+.q .stack p { max-width: var(--col); }
+.tag { display: inline-flex; align-items: center; gap: 6px; font: 600 0.74rem/1 var(--body); letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 9px; border-radius: 999px; border: 1px solid currentColor; width: fit-content; }
+.tag.pass { color: var(--good); }
+.tag.short { color: var(--warn); }
+.tablewrap { overflow-x: auto; max-width: 100%; }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 600 0.78rem/1.3 var(--body); color: var(--muted); letter-spacing: 0.02em; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td b { font-weight: 600; }
+
+/* charts */
+.chart { width: 100%; max-width: 100%; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart .ttl { font: 600 0.95rem/1.3 var(--body); margin-bottom: 4px; }
+.chart text { font-family: var(--body); }
+.tip { position: fixed; z-index: 40; pointer-events: none; background: var(--fg); color: var(--bg); font: 500 0.82rem/1.4 var(--body); padding: 8px 10px; border-radius: 6px; max-width: 260px; box-shadow: 0 6px 20px rgb(0 0 0 / 0.18); }
+.hit { fill: transparent; cursor: default; }
+
+/* training and metrics: charts are images on a fixed white card, so their text colours are fixed too */
+.figs { display: grid; gap: 28px; }
+.figrow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; align-items: start; }
+@media (max-width: 860px) { .figrow { grid-template-columns: minmax(0, 1fr); } }
+.fig { margin: 0; background: #FFFFFF; border: 1px solid var(--rule); border-radius: 12px; padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fig img { width: 100%; max-width: 100%; height: auto; display: block; }
+.fig figcaption { font-size: 0.9rem; line-height: 1.5; color: #14212E; }
+.fig figcaption a { color: #96560C; }
+.fig figcaption .k { display: block; font: 600 0.74rem/1.2 var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: #96560C; margin-bottom: 4px; }
+
+/* lessons */
+.group { margin-top: clamp(28px, 4vw, 44px); }
+.group > h3 { font: 600 0.78rem/1.2 var(--body); letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); padding-bottom: 10px; border-bottom: 1px solid var(--rule); }
+.lesson { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: clamp(16px, 3vw, 40px); padding-block: 24px; border-bottom: 1px solid var(--rule); }
+@media (max-width: 760px) { .lesson { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
+.ev { display: flex; flex-direction: column; gap: 4px; }
+.ev b { font: 700 1.9rem/1.05 var(--head); letter-spacing: -0.02em; color: var(--accent); font-variant-numeric: tabular-nums; }
+.ev span { font-size: 0.84rem; line-height: 1.4; color: var(--muted); }
+.lesson .stack { gap: 10px; }
+.lesson .stack p { max-width: var(--col); }
+.lesson .chart { margin-top: 8px; max-width: 640px; }
+
+/* next + limits + credits */
+.next { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; }
+.next li { padding: 14px 0; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; }
+.next li b { font: 600 0.78rem/1.6 var(--body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+@media (max-width: 560px) { .next li { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+.status { display: inline-flex; align-items: center; gap: 8px; font: 500 0.88rem/1.3 var(--body); }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); animation: pulse 2.4s ease-out infinite; flex: none; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); } 80%, 100% { box-shadow: 0 0 0 10px transparent; } }
+@media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+.credits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(20px, 3vw, 40px); font-size: 0.92rem; }
+@media (max-width: 860px) { .credits { grid-template-columns: minmax(0, 1fr); } }
+.credits ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+footer.end { padding-block: 32px 40px; }
+footer.end .inner { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; font-size: 0.86rem; }
+</style>
+</head>
+<body>
+
+
+<header class="top wrap">
+  <div class="inner">
+    <a class="brand" href="#top" aria-label="Back to top">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 11v11"/><path d="M9 22h6"/></g><g fill="#F0A23B"><circle cx="12" cy="10" r="1.6"/><path d="M12 10 12.9 2.2a.9.9 0 0 0-1.8 0Z"/><path d="M12 10 5.3 14a.9.9 0 0 0 .9 1.5Z"/><path d="M12 10 18.7 14a.9.9 0 0 1-.9 1.5Z"/></g></svg>
+      <span>Turbine Performance Engineer</span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#pitch">Pitch</a><a href="#demo">Demo</a><a href="#built">What we built</a><a href="#results">Results</a><a href="#metrics">Metrics</a><a href="#lessons">What we learned</a><a href="#limits">Limits</a><a href="#data">Data</a>
+    </nav>
+  </div>
+</header>
+
+<div class="band wrap" id="top">
+  <div class="inner hero">
+    <div class="hero-grid">
+      <div>
+        <p class="eyebrow">TimeNet Hackathon · Round 1 · sololeveling</p>
+        <h1 style="margin-top:14px">A performance engineer for every wind turbine</h1>
+        <p class="lede">We trained a time-series language model on one turbine maker and tested it, once, on a maker it had never seen. It caught 92% of stops where a gradient-boosting tree caught 73%. Every answer sits next to the independent evidence that checks it.</p>
+        <div class="cta">
+          <a class="btn primary" href="#pitch">Watch the pitch</a>
+          <a class="btn" href="#demo">Open the demo</a>
+          <a class="btn" href="#lessons">What we learned</a>
+        </div>
+      </div>
+      <figure class="day" style="margin:0" aria-labelledby="day-title">
+        <h3 id="day-title">Hill of Towie, 9 July 2023 · one turbine-day, 144 ten-minute steps</h3>
+        <div class="legend"><span><i style="background:var(--band-accent)"></i>T12 power</span><span><i style="background:var(--band-line)"></i>T21 power</span><span><i style="background:var(--band-fg);height:2px"></i>T12 wind speed</span></div>
+        <div class="chart" id="dayChart" role="img" aria-label="T12 produced zero power all day while its wind speed ran between 4 and 11 metres per second in the morning; T21 produced up to 1,668 kilowatts."></div>
+        <p class="cap small muted">T21 made 8.2 MWh. T12 made nothing: it stood still for 840 minutes with wind of 4 m/s or more. Our model had only been trained on Senvion turbines, and it answered “stopped” for this Siemens turbine with probability 0.99999.</p>
+      </figure>
+    </div>
+    <div class="score" aria-label="Headline results">
+      <div><b>91.6%</b><span>of 2,556 stops caught on a Siemens farm the model never saw, 2016–2021</span><em>Gradient boosting: 73.2%</em></div>
+      <div><b>83.8%</b><span>F1 score on the cause of a stop (weather or the turbine) on that farm</span><em>Tree: 76.6%</em></div>
+      <div><b>96.6%</b><span>of 768 grid-curtailment turbine-days caught, Hill of Towie 2025–26</span><em>Trained without one real curtailment label</em></div>
+      <div><b>&lt;5%</b><span>gap between our lost-energy total and the operator’s own figure</span><em>1,338 stops, correlation 0.988</em></div>
+    </div>
+  </div>
+</div>
+
+<main>
+<section class="part wrap" id="problem">
+  <div class="inner">
+    <div class="head"><p class="eyebrow">The problem</p><h2>Wind farms lose energy, and the reason rests on the vendor’s word</h2></div>
+    <div class="three">
+      <div class="fact"><b>−9%</b><p>European onshore wind farms produce a median of about 9% less than they were financed on. Only 14% meet or beat their estimate.</p><p class="src">Hendrickson study of European onshore projects (via WindESCo); Hammond &amp; Simley, Wind Energy Science 2026.</p></div>
+      <div class="fact"><b>£3,700</b><p>Each 1% of energy recovered is worth about £3,700 per turbine per year.</p><p class="src">2 MW turbine, 30% capacity factor, £70 per MWh.</p></div>
+      <div class="fact"><b>1 maker</b><p>Today’s tools find the loss and tag a cause from each maker’s own alarm codes, scored on private fleets. Nobody outside can check the answer, and it stops at that maker’s turbines.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="part wrap" id="pitch">
+  <div class="inner">
+    <div class="head"><p class="eyebrow">The pitch</p><h2>Watch the pitch</h2><p>4:46, with the closed loop running live on real data at 3:07. German subtitles are available from the player's CC button.</p></div>
+    <video class="video" controls preload="metadata" playsinline poster="media/pitch-poster.jpg">
+      <source src="media/pitch-video.mp4" type="video/mp4">
+      <track kind="subtitles" srclang="de" label="Deutsch" src="media/pitch-video.de.vtt">
+      <a href="media/pitch-video.mp4">Download the pitch video (MP4)</a>
+    </video>
+    <p class="presenter-note"><b>A note from the presenter:</b> I build first and pitch second. Presenting doesn't come naturally to me, and I used this hackathon to practise it, so thank you for bearing with the delivery. The substance is in the live demo and the results below, and every number there was checked before we scored it.</p>
+    <div class="subhead"><h3>Or step through the slides</h3><p class="small muted">Click a slide or use the arrow keys. Speaker notes show the spoken script.</p></div>
+    <div class="frame deck"><iframe id="deck" src="pitch.html" title="Pitch deck: A performance engineer for every turbine" loading="lazy"></iframe></div>
+    <div class="bar">
+      <span class="count" id="deckCount">Slide 1 / 13</span>
+      <button type="button" id="deckPrev">← Previous</button>
+      <button type="button" id="deckNext">Next →</button>
+      <button type="button" id="deckNotes" aria-pressed="false">Speaker notes</button>
+      <a class="tool" href="pitch.html" target="_blank" rel="noopener">Open full screen</a>
+    </div>
+  </div>
+</section>
+
+<section class="part wrap" id="demo">
+  <div class="inner">
+    <div class="head"><p class="eyebrow">The demo</p><h2>The whole loop, in one tool</h2><p>A replay of real turbine data with the models’ answers, each beside its independent checks. Walk the loop: the 3D farm view (detect), “Where did the energy go?” (explain), “Fix first” and the Copilot (act), “Did the fix work?” (verify) and “Real results” (learn). Without satellite imagery, the 3D view uses generated ground. The Copilot runs when the monitor is opened on claude.ai.</p></div>
+    <div class="frame demo"><iframe id="demoFrame" src="demo/index.html" title="Wind farm monitor demo" loading="lazy"></iframe></div>
+    <div class="bar"><span class="count">Replay · real data</span><a class="tool" href="demo/index.html" target="_blank" rel="noopener">Open the demo full screen</a><a class="tool" href="#own-data">Bring your own data</a><a class="tool" href="#connect">Connect your model</a></div>
+    <div class="cards">
+      <article><p class="k">Detect · Hill of Towie</p><p>The language model’s daily stop answers, 3–9 July 2023: <b>20 of 25 stops caught, 0 false alarms</b>. The 5 misses were short stops.</p></article>
+      <article><p class="k">Curtailment · Hill of Towie</p><p>25–31 May 2025: <b>77 of 84 grid-dispatch turbine-days caught</b>, with 4 false alarms.</p></article>
+      <article><p class="k">Explain · Kelmarsh</p><p>88 stops in 2023, 746 MWh lost, each checked against the operator’s energy figure, comment, status codes and grid meter: <b>284 of 302 checks agree</b>.</p></article>
+      <article><p class="k">Running low · Kelmarsh</p><p>The tree caught <b>16 of 19</b> capped 30-day windows and called <b>0 of 17</b> sensor-fault windows a loss.</p></article>
+      <article><p class="k">Act · Fix first</p><p>Turbines ranked by <b>money at stake</b>; the Copilot drafts the work order, and a person approves it.</p></article>
+      <article><p class="k">Verify · Turbine 13</p><p>The real before/after series of the AeroUp blade upgrade, with both references.</p></article>
+      <article><p class="k">Learn · Real results</p><p>Mark an answer <b>Correct</b>, <b>Wrong cause</b> or <b>Not a problem</b>. It stays pending until independent evidence agrees.</p></article>
+    </div>
+    <div class="connect" id="own-data">
+      <div class="subhead"><h3>Bring your own data</h3><p class="small muted">Load your own wind farm into the monitor and run the whole loop on it. Everything happens in your browser: your files are read on your computer and never uploaded, and the farm is gone when you close the tab.</p></div>
+      <ol class="steps">
+        <li><b>Export 10-minute SCADA.</b> One CSV per turbine (<code>WTG01.csv</code>, <code>T02.csv</code> and so on) or one file with a turbine column, up to 30 MB each, with times in UTC. Six signals are needed. No alarm or status codes are read, so any turbine maker works.
+          <pre><code>Date and time,Power (kW),Wind speed (m/s),Rotor speed (RPM),Pitch angle (°),Nacelle position (°)
+2023-07-02 00:00:00,1843.2,11.4,16.9,2.1,301.5</code></pre>
+          <span class="small muted">Other column names are fine: the page matches them, Greenbyte exports included, and you can correct any guess. Power in watts is converted to kW. Two optional signals help: a power limit, which tells curtailment apart from low output, and generator temperature. A full example: <a href="https://turbine-performance-engineer.vercel.app/demo/data/rows/towie/T01.csv" target="_blank" rel="noopener">T01.csv</a> from the demo.</span></li>
+        <li><b>Add the farm.</b> Open the <a href="https://turbine-performance-engineer.vercel.app/demo/" target="_blank" rel="noopener">demo</a>, press <b>Add a farm</b>, enter the name, maker and model, and choose your files. To place the turbines on a map, add a positions CSV; without one, they stand on a grid.
+          <pre><code>turbine,latitude,longitude
+T01,55.9512,-3.1984</code></pre></li>
+        <li><b>Read the readiness check.</b> It lists the turbines (3 or more, to compare neighbours), the period, the time step, the missing values and any odd ranges. Fix anything marked red, check the rated power (filled in from your data), rotor diameter and hub height, then press <b>Add farm and start replay</b>.</li>
+        <li><b>Use it.</b> Your farm appears in the farm list as “your data” and replays straight away: each turbine's state, where the energy went and what to fix first. Until a model answers, the states come from the stand-in rules.</li>
+        <li><b>Add your model's answers.</b> Run the bridge from the next section on the same folder, then open <b>Model feed</b> in the demo, enter <code>http://localhost:8790/latest</code> and press <b>Start polling</b>. The first farm you add is <code>farm1</code> and the next is <code>farm2</code> (<code>--farm farm2</code>).
+          <pre><code>python3 bridge.py --rows my_farm/</code></pre></li>
+      </ol>
+    </div>
+
+    <div class="connect" id="connect">
+      <div class="subhead"><h3>Connect a model to the demo</h3><p class="small muted">The monitor runs on stand-in rules until a model answers. Any model can take over, ours or yours: it sends one small JSON message per 10-minute step, and the page shows its status, explanation and confidence in place of the rules, turbine by turbine.</p></div>
+      <ol class="steps">
+        <li><b>Get the bridge.</b> One Python file, standard library only. It reads the same real Hill of Towie rows the demo replays (2–10 July 2023, 21 turbines), or your own files with <code>--rows</code>.
+          <pre><code>curl -O https://turbine-performance-engineer.vercel.app/connect/bridge.py</code></pre></li>
+        <li><b>Put your model in <code>predict_day()</code>.</b> It receives one turbine-day of 10-minute rows (power, wind speed, rotor speed, pitch and nacelle direction) and returns an answer for each step it covers. It ships with a stand-in rule, so you can test the connection before your model is ready.</li>
+        <li><b>Run it.</b>
+          <pre><code>python3 bridge.py
+# 540 messages for 21 turbines
+# Serving at http://localhost:8790/latest</code></pre></li>
+        <li><b>Open the demo with your feed:</b> <a href="https://turbine-performance-engineer.vercel.app/demo/?model=http://localhost:8790/latest" target="_blank" rel="noopener">demo/?model=http://localhost:8790/latest</a>. Choose <b>Hill of Towie</b> and press <b>Replay the real rows</b>. If the browser asks to allow access to your local network, allow it. Turbines your model covers show its answer, cause and confidence; the others keep the stand-in rules. <b>Model feed</b> counts the messages received.</li>
+      </ol>
+      <p class="small muted" style="max-width: var(--col); margin-top: 14px">No server? Run <code>python3 bridge.py --out feed.jsonl</code>, then open <b>Model feed</b> in the demo and load the file.</p>
+      <div class="connect-grid">
+        <div>
+          <h4>An example message</h4>
+          <pre><code>{ "schema": "windmonitor.model/1",
+  "farm": "towie", "time": "2023-07-09T15:30:00Z",
+  "model": { "name": "my-model", "version": "1" },
+  "turbines": {
+    "T12": { "status": "stopped", "cause": "turbine fault",
+             "confidence": 0.93,
+             "diagnosis": "Stopped since 13:10 at 11 m/s.",
+             "evidence": ["power 0 kW", "rotor 0 rpm"] } } }</code></pre>
+          <p class="small muted">The status is one of normal, stopped, curtailed, low or sensor; everything else is optional. With <code>expected_kw</code>, the lost energy is computed from your model's own expectation. The full contract: <a href="https://turbine-performance-engineer.vercel.app/demo/MODEL_FEED.md" target="_blank" rel="noopener">MODEL_FEED.md</a>.</p>
+        </div>
+        <div>
+          <h4>Using our models</h4>
+          <p class="small">The five trained models are on <a href="https://huggingface.co/collections/gsoulja/sololeveling-wind-turbine-performance-engineer-6b031e0b75d3cb2072628436" target="_blank" rel="noopener">Hugging Face</a>. Each answers one question per turbine-day from six signals: power, wind speed, rotor speed, pitch, nacelle direction and temperature. The demo rows carry the first five; the full rows come from TimeNet's Hill of Towie connector (<a href="https://github.com/OpenTSLM/TimeNet/pull/838" target="_blank" rel="noopener">PR #838</a>). To show a day-level answer in the monitor, follow the comments in <code>predict_day()</code>: when the model says yes, answer for the steps where the turbine stood still, with its probability as the confidence.</p>
+          <p class="small muted">The weights load into OpenTSLM-SP with a frozen Llama-3.2-1B. The stops and joint models also need our fusion adapter, and the prompts and data preparation aren't public. To run them, <a href="https://github.com/Gsoulja/turbine-performance-engineer/issues" target="_blank" rel="noopener">ask us in the GitHub repo</a>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="part wrap" id="built">
+  <div class="inner">
+    <div class="head"><p class="eyebrow">What we built</p><h2>One loop, from raw signals to a checked answer</h2><p>We answer the three questions an asset manager asks, from the raw 10-minute signals, and the answers close a loop.</p></div>
+    <ol class="loop">
+      <li><h3>Detect</h3><p class="small">What is the turbine doing: stopped or curtailed?</p></li>
+      <li><h3>Explain</h3><p class="small">How many megawatt-hours did each stop cost, and was it the weather or the turbine?</p></li>
+      <li><h3>Act</h3><p class="small">Fix first ranks turbines by money at stake, and the Copilot drafts the work order. A person approves it.</p></li>
+      <li><h3>Verify</h3><p class="small">Did the fix work? Before and after, against two independent references.</p></li>
+      <li><h3>Learn</h3><p class="small">An engineer’s verdict stays pending until independent evidence agrees. A retrained model replaces the current one only if it beats the public tests.</p></li>
+    </ol>
+    <div class="three parts">
+      <article><p class="k">DATA · TIMENET PR #838</p><h3>Three open UK wind farms in TimeNet</h3><p>Kelmarsh (6 Senvion MM92), Penmanshiel (14 Senvion MM82) and Hill of Towie (21 Siemens SWT-2.3): 41 turbines from two makers, 10-minute SCADA, all CC BY 4.0. Every turbine-day has a labelled state, and each label was checked against an independent source.</p></article>
+      <article><p class="k">MODEL · OPENTSLM</p><h3>A language model that reads the signals</h3><p>OpenTSLM on Llama-3.2-1B reads six raw signals: power, wind speed, rotor speed, pitch, nacelle direction and temperature. We added a fusion adapter that mixes the signals at each time step. It lifts average precision on the unseen farm from 0.90 to 0.99.</p></article>
+      <article><p class="k">MONITOR</p><h3>A farm view for the operator</h3><p>A 3D view of the farm with each turbine’s state, the lost energy by cause, the before/after check and a verdict button. Every verdict is saved as a label for the next round.</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="part wrap" id="results">
+  <div class="inner">
+    <div class="head"><p class="eyebrow">Results</p><h2>Held out, written down first, scored once</h2><p>Every test below was set before it was scored: the data, the pass bar and the alarm level. The held-back data was scored once. Tests that fell short are listed next to the ones that passed.</p></div>
+
+    <div class="q">
+      <div class="stack">
+        <span class="tag pass">Passed its pre-set rule</span>
+        <h3>Detect · Stops of 60 minutes or more at 4 m/s or more</h3>
+        <p>Trained on the two Senvion farms. The alarm level was set on Senvion validation days only, then the model was tested on the Siemens farm it never saw in training.</p>
+        <p>On the six held-back years it caught 471 more stops than gradient boosting (95% interval +378 to +576) with 3 more false alarms (0 to +8). The false-alarm part passed at its edge.</p>
+      </div>
+      <div class="stack">
+        <div class="chart" id="stopsChart"></div>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Hill of Towie test</th><th class="n">Turbine-days</th><th class="n">Stops</th><th class="n">Our model</th><th class="n">Gradient boosting</th><th class="n">CNN ensemble</th></tr></thead>
+          <tbody>
+            <tr><td>2016–2021, scored once</td><td class="n">37,899</td><td class="n">2,556</td><td class="n"><b>2,341</b> · 8 FA</td><td class="n">1,870 · 5 FA</td><td class="n">1,982 · 5 FA</td></tr>
+            <tr><td>2023–2024</td><td class="n">9,983</td><td class="n">796</td><td class="n"><b>758</b> · 2 FA</td><td class="n">638 · 2 FA</td><td class="n">670 · 0 FA</td></tr>
+          </tbody>
+        </table></div>
+        <p class="small muted">FA: false alarms. Our model is the 3-seed ensemble of OpenTSLM with the fusion adapter.</p>
+      </div>
+    </div>
+
+    <div class="q">
+      <div class="stack">
+        <span class="tag pass">Detector held on real dispatch</span>
+        <h3>Detect · Was this turbine told to cut its output?</h3>
+        <p>A gradient-boosting detector trained without one real curtailment label, frozen, then tested against the grid operator’s dispatch records.</p>
+        <p>Our language model, first run, is on par with a tree given the same inputs, but stays below the best tree, which sees farm-wide context. It failed its pre-set bar.</p>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Test</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Hill of Towie 2025–26, 768 turbine-days on 37 dispatch dates</td><td><b>96.6% caught</b> [93.9, 98.7]; 8.1% of clean days alarmed</td></tr>
+          <tr><td>Senvion, logged curtailment (test A)</td><td>83.8% caught</td></tr>
+          <tr><td>Senvion, later logged days</td><td>42.5% caught. Most of those days show no drop in power; the freeze rule failed there</td></tr>
+          <tr><td>Language model, first run, Hill of Towie</td><td>152 of 768 caught, against 504 for the best tree</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="q">
+      <div class="stack">
+        <span class="tag pass">Holds</span>
+        <h3>Explain · Lost energy and the cause of each stop, at home</h3>
+        <p>Against the operator’s own lost-energy figure over 1,338 stops: correlation 0.988, total within −4.7%. On fresh 2023–24 stops: 0.996.</p>
+        <p>The cause (weather or the turbine side) comes from a gradient-boosting tree trained on 2019–2022 stops, frozen, then tested once on 2023–24 against the operator’s comments. 312 of 313 stops are right.</p>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Farm, fresh 2023–24</th><th class="n">Stops</th><th class="n">Lost energy</th><th class="n">Macro F1</th><th class="n">Weather share error</th></tr></thead>
+        <tbody>
+          <tr><td>Kelmarsh</td><td class="n">103</td><td class="n">1,143 MWh</td><td class="n">1.000 [0.500, 1.000]</td><td class="n">0.0 points</td></tr>
+          <tr><td>Penmanshiel</td><td class="n">210</td><td class="n">2,394 MWh</td><td class="n">0.993 [0.969, 1.000]</td><td class="n">3.4 points</td></tr>
+        </tbody>
+      </table><p class="small muted" style="margin-top:8px">Bar set in advance: macro F1 of 0.8 or more and an energy-share error of 5 points or less, at both farms. Kelmarsh had only 4 weather stops, so its interval is wide.</p></div>
+    </div>
+
+    <div class="q">
+      <div class="stack">
+        <span class="tag pass">Passed, scored once</span>
+        <h3>Explain · The cause of a stop on a maker it never saw</h3>
+        <p>Both models were trained on Senvion stops (2019–2024), frozen, and scored once on Hill of Towie. Nothing was trained or tuned there. The bar: the language model’s F1 at least the tree’s minus 0.05.</p>
+        <p>The language model found 748 of 876 weather stops, the tree 635. Most of the gain is icing. It leads in 8 of 9 years; 2016 is a tie. Its energy-share error was 6.7 points against the tree’s 3.1, inside the allowance.</p>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Hill of Towie, 2016–2024</th><th class="n">Our model</th><th class="n">Tree</th><th class="n">Difference [95%]</th></tr></thead>
+        <tbody>
+          <tr><td>All 1,741 stops</td><td class="n"><b>0.838</b></td><td class="n">0.766</td><td class="n">+0.072 [+0.032, +0.116]</td></tr>
+          <tr><td>Stops whose label agrees with ERA5 weather</td><td class="n"><b>0.910</b></td><td class="n">0.832</td><td class="n">+0.078 [+0.029, +0.134]</td></tr>
+        </tbody>
+      </table><p class="small muted" style="margin-top:8px">Guessing the most common answer scores 0.33.</p></div>
+    </div>
+
+    <div class="q">
+      <div class="stack">
+        <span class="tag short">Not yet confirmed by our bar</span>
+        <h3>Verify · Did the AeroUp blades on turbine 13 bring energy back?</h3>
+        <p>Installed 24–29 September 2021. The turbine’s daily energy is compared with two independent expected-energy references, each against a baseline from before the install. The bar: both references show a gain between +1.5% and +7%, the 90% interval above 0, and no loss flag.</p>
+        <p>Both references see a gain, and 0 of 106 window-days were flagged as a loss, but the interval for reference B still includes 0.</p>
+      </div>
+      <div class="chart" id="fixChart"></div>
+    </div>
+
+    <div class="q">
+      <div class="stack">
+        <span class="tag short">Language model fell short</span>
+        <h3>Explain · Is this turbine running below its power curve?</h3>
+        <p>Faults were injected into real turbine data, a digital twin, so there is a known answer; real running-low faults have no ground truth. Trained on Kelmarsh, Penmanshiel and Hill of Towie, validated on a Fuhrländer farm, tested on an EDP farm that was never used to choose.</p>
+        <p>The language model failed its validation bar twice: it found 70%, then 68%, of losses against the tree’s 92% and 97%. The tree stays the detector. The rule-based detector failed its pre-set Hill of Towie test (30-day false alarms 7.7–13.7%).</p>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>EDP, Fuhrländer alarm level carried over</th><th class="n">Our model</th><th class="n">Tree</th></tr></thead>
+        <tbody>
+          <tr><td>Real ordinary windows flagged (target 3%)</td><td class="n"><b>4.5%</b></td><td class="n">18%</td></tr>
+          <tr><td>Ranking of losses (AP)</td><td class="n">0.995</td><td class="n">0.989</td></tr>
+          <tr><td>Cause F1, 7 classes</td><td class="n">0.783</td><td class="n">0.779</td></tr>
+          <tr><td>Losses found, both held to 3% of real windows</td><td class="n">50%</td><td class="n"><b>77%</b></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</section>
+
+<section class="part wrap" id="metrics">
+  <div class="inner">
+    <div class="head"><p class="eyebrow">Training and metrics</p><h2>How the models trained, and how they score</h2><p>The charts from our published models. Every number was re-derived from the saved predictions and matches the results above. The weights and model cards are open on <a href="https://huggingface.co/collections/gsoulja/sololeveling-wind-turbine-performance-engineer-6b031e0b75d3cb2072628436" target="_blank" rel="noopener">Hugging Face</a>.</p></div>
+    <div class="figs">
+      <div class="figrow">
+        <figure class="fig"><img src="media/charts/lost_energy.png" alt="Scatter of our lost-energy estimate per stop against the operator's own figure, 1,338 stops, on log scales, close to the diagonal" loading="lazy"><figcaption><span class="k">Explain · lost energy per stop</span>Our estimate against the operator's own lost-production figure: <b>Pearson r 0.988</b>, MAE 1.98 MWh, RMSE 7.40 MWh (driven by a few long stops), total −4.7%, over 1,338 stops.</figcaption></figure>
+        <figure class="fig"><img src="media/charts/stops_training.png" alt="Training and validation loss per epoch for the three stops seeds, on a log scale" loading="lazy"><figcaption><span class="k">Stops · training</span>Three seeds, 5 epochs at batch 16; each publishes its lowest-validation-loss epoch (5, 2 and 4). <a href="https://huggingface.co/gsoulja/Llama-3.2-1B-OpenTSLM-wind-stops" target="_blank" rel="noopener">Model card</a></figcaption></figure>
+      </div>
+      <figure class="fig"><img src="media/charts/stops_evaluation.png" alt="ROC, precision-recall and confusion matrix for stops on Hill of Towie 2023-24" loading="lazy"><figcaption><span class="k">Stops · Hill of Towie 2023–24, a maker never seen</span>3-seed ensemble: ROC AUC 1.000, average precision 0.999. At the alarm level fixed on Senvion validation: <b>758 of 796 stops caught, 2 false alarms</b> among 9,187 ordinary days.</figcaption></figure>
+      <figure class="fig"><img src="media/charts/cause_training.png" alt="Training loss per epoch and per step for the cause model" loading="lazy"><figcaption><span class="k">Cause · training</span>4 epochs; the published weights are epoch 4, the lowest validation loss. <a href="https://huggingface.co/gsoulja/Llama-3.2-1B-OpenTSLM-wind-stop-cause" target="_blank" rel="noopener">Model card</a></figcaption></figure>
+      <figure class="fig"><img src="media/charts/cause_evaluation.png" alt="ROC, precision-recall and confusion matrix for the cause of a stop on Hill of Towie" loading="lazy"><figcaption><span class="k">Cause · Hill of Towie 2016–24, scored once</span>Weather as the positive class: ROC AUC 0.882, average precision 0.823. At the fixed threshold 0.35: 748 of 876 weather stops found, <b>macro F1 0.838</b> (tree 0.766).</figcaption></figure>
+      <figure class="fig"><img src="media/charts/curtailment_evaluation.png" alt="ROC, precision-recall and confusion matrix for curtailment on Hill of Towie 2025-26" loading="lazy"><figcaption><span class="k">Curtailment · Hill of Towie 2025–26 (fell short of its bar)</span>ROC AUC 0.789, average precision 0.318; 188 of 768 dispatch days caught at the validation alarm level. The gradient-boosting detector caught 742. <a href="https://huggingface.co/gsoulja/Llama-3.2-1B-OpenTSLM-wind-curtailment" target="_blank" rel="noopener">Model card</a></figcaption></figure>
+      <figure class="fig"><img src="media/charts/runninglow_loss_size.png" alt="Scatter of the running-low model's loss size against the injected truth on EDP, two runs" loading="lazy"><figcaption><span class="k">Running low · size of the loss on EDP</span>Run 1: <b>Pearson r 0.858, RMSE 2.28, MAE 1.44</b> percentage points (loss windows only: 0.786 / 2.65 / 1.95). Run 2: 0.616 / 3.57 / 2.00. <a href="https://huggingface.co/gsoulja/Llama-3.2-1B-OpenTSLM-wind-running-low" target="_blank" rel="noopener">Model card</a></figcaption></figure>
+      <figure class="fig"><img src="media/charts/joint_training.png" alt="Joint model v1: training and validation loss per epoch, validation loss by question, and per-step training loss" loading="lazy"><figcaption><span class="k">One model for every question · v1 training</span>The average validation loss fell every epoch while the cause loss rose after epoch 1, and stops' loss stayed low while its false alarms rose: the average hid both problems. <a href="https://huggingface.co/gsoulja/Llama-3.2-1B-OpenTSLM-wind-joint" target="_blank" rel="noopener">Model card</a></figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section class="part wrap" id="lessons">
+  <div class="inner">
+    <div class="head"><p class="eyebrow">What we learned</p><h2>Twelve things we would tell the next team</h2><p>Each one comes with the number that taught it to us.</p></div>
+
+    <div class="group">
+      <h3>About the model</h3>
+      <article class="lesson">
+        <div class="ev"><b>0.838 vs 0.766</b><span>cause F1 on the new maker, ours against the tree</span></div>
+        <div class="stack">
+          <h3>A language model earns its place on a maker it has never seen</h3>
+          <p>On the farms it trained on, gradient-boosting trees match or beat it. They rank stop days slightly better (average precision 0.996 against 0.989) and win cause at Kelmarsh 2016–18 (0.918 against 0.518). On the Siemens farm the model never saw, it wins both questions. New customers bring new makers, so that is where we aim it.</p>
+          <div class="chart" id="causeChart"></div>
+        </div>
+      </article>
+      <article class="lesson">
+        <div class="ev"><b>4.5% vs 18%</b><span>ordinary windows flagged on a new farm, target 3%</span></div>
+        <div class="stack">
+          <h3>What carries over is often the alarm level</h3>
+          <p>For stops, an alarm level set on Senvion alone held on Siemens. For running-low faults on a new farm (EDP), our model flagged 4.5% of ordinary windows against a 3% target, and the tree flagged 18%. Held to the same 3% budget, the tree still found more losses: 77% against 50%. The calibration travelled, and the separation did not.</p>
+          <div class="chart" id="edpChart"></div>
+        </div>
+      </article>
+      <article class="lesson">
+        <div class="ev"><b>0.90 → 0.99</b><span>average precision on the unseen farm, before and after the fusion adapter</span></div>
+        <div class="stack">
+          <h3>The detection happens in the adapter</h3>
+          <p>A plain linear classifier on the fusion adapter’s tokens is as accurate as the full model, seed by seed. Mixing the signals at the same moment is what finds the stop. The language model’s part is to put the answer into words.</p>
+        </div>
+      </article>
+      <article class="lesson">
+        <div class="ev"><b>55% vs &lt;1%</b><span>windows without pitch: in the failed home test, and in training</span></div>
+        <div class="stack">
+          <h3>A missing sensor is the model’s blind spot</h3>
+          <p>The cause model failed its home test on Kelmarsh 2016–18, almost entirely in windows where pitch wasn’t recorded. They were 55% of that test and under 1% of its training. In the same run, a missing temperature was drawn as 0 °C, which looks like frost, so the model called icing. A tree handles a gap natively; a language model has to be taught it. So the next model trains with a signal dropped at random.</p>
+        </div>
+      </article>
+      <article class="lesson">
+        <div class="ev"><b>68% vs 97%</b><span>losses found when “sensor fault” was 40% of the training answers</span></div>
+        <div class="stack">
+          <h3>The most common training answer becomes the default</h3>
+          <p>Our second running-low model saw “sensor fault” in 40% of its cause examples. It started calling real losses sensor faults, and found 68% of them against the tree’s 97%. Balance the answers before training, or the model learns the base rate.</p>
+        </div>
+      </article>
+      <article class="lesson">
+        <div class="ev"><b>47 / 53</b><span>false alarms of the one-for-all model that were calm-wind standstills</span></div>
+        <div class="stack">
+          <h3>One model for every question must agree on what a picture means</h3>
+          <p>We trained one model on all four questions at once. It learned them all, and curtailment even improved on the new farm: 570 of 768 grid-dispatch days caught, against 188 for its separate model, clearing the bars we set for that test (one seed). But stops and cause fell short of their pre-set bars. For the stops question, a turbine standing still in calm wind is not downtime; the shared model started counting those standstills as stops, probably because the cause question trains on stops at any wind. It also called one storm’s weather stops turbine faults. The separate models stay the answer while we fix the clashes, and we now check each question’s own score during training, because the average loss hid the problem.</p>
+        </div>
+      </article>
+    </div>
+
+    <div class="group">
+      <h3>About the data</h3>
+      <article class="lesson">
+        <div class="ev"><b>28 / 56</b><span>“underperformance” days that were a broken anemometer</span></div>
+        <div class="stack">
+          <h3>The operator’s log is often wrong, so check every label</h3>
+          <p>We found the broken anemometers with each turbine’s second wind sensor. A run of “icing” stops at one Penmanshiel turbine was a faulty sensor, not ice. Where the evidence was clean, it agreed: stop minutes recomputed from the raw logs for 29,218 turbine-days gave 0 mismatches, and output was near zero in 82% of the slots where the grid operator instructed a cut, against 1% otherwise. A tool that learns from the log learns its mistakes.</p>
+        </div>
+      </article>
+      <article class="lesson">
+        <div class="ev"><b>96.6% vs 42.5%</b><span>curtailment caught on grid-dispatch days, and on later Senvion logged days</span></div>
+        <div class="stack">
+          <h3>A question can be learned without real labels, but it must be tested on real ones</h3>
+          <p>Our curtailment detector never saw a real curtailment label, and it caught 96.6% of the days the grid cut Hill of Towie’s output. On later Senvion logged days it caught 42.5%: most of those days show no drop in power. Only the real records told us which was which.</p>
+        </div>
+      </article>
+      <article class="lesson">
+        <div class="ev"><b>2 → 60</b><span>false alarms on 2023–24 once stops under 60 minutes are counted</span></div>
+        <div class="stack">
+          <h3>The hard days are short stops and calm days</h3>
+          <p>The stops the model still misses last 60 to 90 minutes, and its false alarms are turbines idling all day at low wind. Our stop tests leave out days with a stop under 60 minutes, and we say so next to every result.</p>
+        </div>
+      </article>
+    </div>
+
+    <div class="group">
+      <h3>About the method</h3>
+      <article class="lesson">
+        <div class="ev"><b>[0, +8]</b><span>extra false alarms against the tree on the held-back years, 95% interval</span></div>
+        <div class="stack">
+          <h3>Write the test down first, then score it once</h3>
+          <p>We kept six years of the Siemens farm aside, wrote the analysis and the pass rule before scoring, and scored it once with every model and threshold frozen. It passed, at the edge. Those years are now used up, so the next model needs a fresh test.</p>
+        </div>
+      </article>
+      <article class="lesson">
+        <div class="ev"><b>152 / 768</b><span>dispatch days our curtailment language model caught, against 504 for the tree</span></div>
+        <div class="stack">
+          <h3>Publish the failures next to the wins</h3>
+          <p>Our curtailment and running-low language models fell short of their pre-set bars. The cause model failed its home test. The first real fix check isn’t confirmed yet. Each of those results is the bar the next model has to clear.</p>
+        </div>
+      </article>
+      <article class="lesson">
+        <div class="ev"><b>Tree first</b><span>more GPU time only once the model matches it on validation</span></div>
+        <div class="stack">
+          <h3>Beat the tree before spending the GPU</h3>
+          <p>A gradient-boosting tree trains in minutes on the same data and is often as good. We give a language model more GPU time only once it is at least as good as the tree on validation. That keeps the claim honest about where the model adds value.</p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="part wrap" id="next">
+  <div class="inner">
+    <div class="head"><p class="eyebrow">Next</p><h2>From a proven loop to every farm</h2></div>
+    <p class="status" style="margin-bottom:18px"><span class="dot" aria-hidden="true"></span>One model for every question: our first run trained a single model on stops, cause, curtailment and running low. It learned all four, but two questions fell short of their pre-set bars, so the separate models stay the answer while we fix the clashes (see what we learned).</p>
+    <ul class="next">
+      <li><b>Robustness</b><span>Training with a signal dropped at random, so a missing sensor doesn’t break the answer.</span></li>
+      <li><b>New makers</b><span>A second new maker: EDP, then Princess Amalia (Vestas, offshore), sealed until it is scored.</span></li>
+      <li><b>Running low</b><span>The cause of a running-low loss, trained and tested like the others.</span></li>
+      <li><b>The loop</b><span>Checked verdicts from engineers feeding each training round.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="part wrap" id="limits">
+  <div class="inner">
+    <div class="head"><p class="eyebrow">Limits</p><h2>What still holds it back</h2><p>Published with the results, not after them.</p></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th style="width:18%">Question</th><th>Limit</th></tr></thead>
+      <tbody>
+        <tr><td><b>Stops</b></td><td>Gradient boosting ranks stop days slightly better (average precision 0.996 against 0.989); our edge is an alarm level that carries over to another maker. Stops under 60 minutes are not in the test. On the held-back 2016–2021 years, no model reached the 95% catch target.</td></tr>
+        <tr><td><b>Curtailment</b></td><td>8.1% of clean days alarmed on Hill of Towie 2025–26. On later Senvion logged days, 42.5% caught. The language model stays below the best tree.</td></tr>
+        <tr><td><b>Cause</b></td><td>At home the tree is the answer: the language model scored 0.518 against 0.918 on Kelmarsh 2016–18. The unseen-maker result is one Siemens farm. Its labels come from the controller’s stop timers, whose meaning isn’t officially documented, and there is no maintenance class, so “turbine side” means faults only. Both models call about half the turbine-side stops during storms “weather”; part of that is a labelling difference.</td></tr>
+        <tr><td><b>Fix check</b></td><td>Turbine 13 is not confirmed by our bar. December’s baseline already contains October 2021, after the install, so it slightly understates the gain.</td></tr>
+        <tr><td><b>Running low</b></td><td>Tested on injected faults; real running-low faults have no ground truth. The language model failed its validation bar twice, and the rule-based detector failed its Hill of Towie test.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section class="part wrap" id="data">
+  <div class="inner">
+    <div class="head"><p class="eyebrow">Data and credits</p><h2>Open data, open tools</h2></div>
+    <div class="credits">
+      <div class="stack"><h3>Datasets (CC BY 4.0)</h3><ul>
+        <li><a href="https://zenodo.org/records/16807551" target="_blank" rel="noopener">Kelmarsh wind farm data</a>, Cubico Sustainable Investments</li>
+        <li><a href="https://zenodo.org/records/16807304" target="_blank" rel="noopener">Penmanshiel wind farm data</a>, Cubico Sustainable Investments</li>
+        <li><a href="https://doi.org/10.5281/zenodo.14870021" target="_blank" rel="noopener">Hill of Towie open dataset</a>, RES on behalf of TRIG</li>
+      </ul><p class="small muted">The demo files contain excerpts and values derived from these datasets. 3D view: imagery © Esri, Maxar, Earthstar Geographics and the GIS user community; elevation from Mapzen/Tilezen terrain tiles (SRTM, NED, EU-DEM and others).</p></div>
+      <div class="stack"><h3>Built with</h3><ul>
+        <li><a href="https://github.com/OpenTSLM/OpenTSLM" target="_blank" rel="noopener">OpenTSLM</a> (MIT licence); our trained models: <a href="https://huggingface.co/collections/gsoulja/sololeveling-wind-turbine-performance-engineer-6b031e0b75d3cb2072628436" target="_blank" rel="noopener">Hugging Face collection</a></li>
+        <li><a href="https://github.com/OpenTSLM/TimeNet" target="_blank" rel="noopener">TimeNet</a> (MIT licence); our dataset: <a href="https://github.com/OpenTSLM/TimeNet/pull/838" target="_blank" rel="noopener">TimeNet PR #838</a></li>
+        <li>Llama 3.2. <b>Built with Llama.</b> Llama 3.2 is licensed under the Llama 3.2 Community License, Copyright © Meta Platforms, Inc. All Rights Reserved.</li>
+      </ul></div>
+      <div class="stack"><h3>Rights</h3><p class="small">© 2026 sololeveling. All rights reserved: no licence is granted to reuse the code on this page. The trained models are open on <a href="https://huggingface.co/collections/gsoulja/sololeveling-wind-turbine-performance-engineer-6b031e0b75d3cb2072628436" target="_blank" rel="noopener">Hugging Face</a>; the labelling and training code are not published. The third-party data above stays under its own licence.</p></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="end band wrap">
+  <div class="inner"><span>A performance engineer for every wind turbine · TimeNet Hackathon, Round 1 · sololeveling</span><a href="#top">Back to top ↑</a></div>
+</footer>
+
+<div class="tip" id="tip" hidden></div>
+
+<script>
+(function () {
+  const NS = "http://www.w3.org/2000/svg";
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+  const tip = document.getElementById("tip");
+  function showTip(html, x, y) { tip.innerHTML = html; tip.hidden = false; const w = tip.offsetWidth, h = tip.offsetHeight; tip.style.left = Math.min(window.innerWidth - w - 12, Math.max(12, x + 14)) + "px"; tip.style.top = Math.max(12, y - h - 12) + "px"; }
+  function hideTip() { tip.hidden = true; }
+  function hover(node, html) { node.addEventListener("pointermove", e => showTip(html, e.clientX, e.clientY)); node.addEventListener("pointerleave", hideTip); node.setAttribute("tabindex", "0"); node.addEventListener("focus", () => { const r = node.getBoundingClientRect(); showTip(html, r.right, r.top); }); node.addEventListener("blur", hideTip); }
+
+  /* Hero: one real turbine-day. Two panels share the time axis (power in kW, wind in m/s): no second y-scale on one panel. */
+  const T12P = Array(144).fill(0);
+  const T21P = [779,915,717,404,400,537,533,558,506,547,619,670,967,1512,1379,937,876,649,1070,1545,1668,1274,769,544,776,767,568,423,710,640,839,930,1105,1012,1183,972,1065,1266,1007,1016,727,422,305,297,402,454,584,556,492,881,986,873,1003,1085,808,256,316,409,529,208,81,182,565,313,286,230,173,100,17,16,0,54,0,0,0,0,0,0,82,63,157,195,117,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,37,77,65,29,0,0,0,0,0,0,0,0];
+  const T12W = [4.6,5.1,6.0,6.9,7.1,7.0,5.1,4.5,4.5,4.1,4.9,6.6,5.4,4.9,6.9,6.8,7.1,6.5,5.8,7.6,9.1,7.8,8.1,8.1,7.3,7.2,7.5,7.3,7.3,7.7,6.8,6.7,6.5,7.3,7.8,10.0,10.8,10.3,9.8,10.6,9.0,7.3,7.3,6.8,6.9,7.1,6.9,7.1,6.4,7.5,8.3,7.3,6.5,5.8,6.1,6.1,6.0,6.3,4.9,4.9,5.8,6.1,5.5,4.6,4.1,3.9,3.3,3.1,2.9,3.1,3.2,3.2,2.5,2.9,2.3,2.4,2.2,1.5,3.1,5.4,6.2,5.8,5.3,3.3,3.2,3.0,3.6,3.7,4.7,4.5,4.1,4.7,4.1,5.4,4.4,2.7,2.5,2.8,3.1,2.5,1.0,4.6,3.8,4.4,3.8,2.6,2.3,3.0,3.6,2.9,3.3,3.3,2.9,2.3,1.7,1.7,1.6,1.6,1.6,1.8,1.7,1.8,0.8,0.4,0.8,0.6,0.8,0.9,1.5,1.6,1.2,1.3,3.4,4.5,3.9,3.5,4.7,4.0,3.4,3.1,3.5,4.2,4.6,4.5];
+  function dayChart() {
+    const box = document.getElementById("dayChart"); box.textContent = "";
+    const W = 560, H = 300, L = 46, R = 12, top1 = 14, h1 = 140, top2 = 192, h2 = 76;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "presentation" }, box);
+    const x = i => L + (W - L - R) * i / 143;
+    const yP = v => top1 + h1 - h1 * v / 2000, yW = v => top2 + h2 - h2 * v / 12;
+    const ink = css("--band-muted"), rule = css("--band-rule"), fg = css("--band-fg"), amber = css("--band-accent"), line = css("--band-line");
+    // stopped-in-usable-wind shading: T12 at 0 kW while its wind is 4 m/s or more
+    for (let i = 0; i < 144; i++) if (T12W[i] >= 4) el("rect", { x: x(i) - (W - L - R) / 286, y: top2, width: (W - L - R) / 143 + 0.3, height: h2, fill: amber, "fill-opacity": "0.16" }, svg);
+    [[0, "0"], [1000, "1,000"], [2000, "2,000 kW"]].forEach(([v, t]) => { el("line", { x1: L, x2: W - R, y1: yP(v), y2: yP(v), stroke: rule, "stroke-width": 1 }, svg); el("text", { x: L - 6, y: yP(v) + 4, "text-anchor": "end", "font-size": 10.5, fill: ink }, svg).textContent = t; });
+    [[0, "0"], [4, "4"], [12, "12 m/s"]].forEach(([v, t]) => { el("line", { x1: L, x2: W - R, y1: yW(v), y2: yW(v), stroke: rule, "stroke-width": 1, "stroke-dasharray": v === 4 ? "3 3" : "" }, svg); el("text", { x: L - 6, y: yW(v) + 4, "text-anchor": "end", "font-size": 10.5, fill: ink }, svg).textContent = t; });
+    el("text", { x: W - R, y: yW(4) - 5, "text-anchor": "end", "font-size": 10, fill: ink }, svg).textContent = "usable wind, 4 m/s";
+    for (let hr = 0; hr <= 24; hr += 6) { const i = Math.min(143, hr * 6); el("text", { x: hr === 24 ? W - R : x(i), y: H - 4, "text-anchor": hr === 0 ? "start" : hr === 24 ? "end" : "middle", "font-size": 10.5, fill: ink }, svg).textContent = String(hr).padStart(2, "0") + ":00"; }
+    const path = (arr, y) => arr.map((v, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1)).join(" ");
+    el("path", { d: path(T21P, yP), fill: "none", stroke: line, "stroke-width": 1.6, "stroke-linejoin": "round" }, svg);
+    el("path", { d: path(T12P, yP), fill: "none", stroke: amber, "stroke-width": 3, "stroke-linecap": "round" }, svg);
+    el("path", { d: path(T12W, yW), fill: "none", stroke: fg, "stroke-width": 1.6, "stroke-linejoin": "round" }, svg);
+    el("text", { x: x(20), y: yP(1668) - 8, "font-size": 11, fill: line }, svg).textContent = "T21";
+    el("text", { x: x(100), y: yP(0) - 7, "font-size": 11.5, "font-weight": 600, fill: amber }, svg).textContent = "T12 · 0 kW all day";
+    // crosshair + tooltip
+    const cross = el("line", { y1: top1, y2: top2 + h2, stroke: fg, "stroke-opacity": 0.5, "stroke-width": 1, visibility: "hidden" }, svg);
+    const hit = el("rect", { x: L, y: top1, width: W - L - R, height: top2 + h2 - top1, class: "hit" }, svg);
+    hit.addEventListener("pointermove", e => {
+      const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * W / r.width;
+      const i = Math.max(0, Math.min(143, Math.round((px - L) / (W - L - R) * 143)));
+      cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible");
+      const hh = String(Math.floor(i / 6)).padStart(2, "0") + ":" + String((i % 6) * 10).padStart(2, "0");
+      showTip(`<b>${hh}</b><br>T12 power: 0 kW<br>T21 power: ${T21P[i].toLocaleString("en-GB")} kW<br>T12 wind: ${T12W[i].toFixed(1)} m/s`, e.clientX, e.clientY);
+    });
+    hit.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); hideTip(); });
+  }
+
+  /* Horizontal bars: ours vs tree, grouped by row. Values are shares (0-100). */
+  function bars(id, title, rows, opt) {
+    const box = document.getElementById(id); box.textContent = "";
+    const t = document.createElement("p"); t.className = "ttl"; t.textContent = title; box.appendChild(t);
+    const lg = document.createElement("div"); lg.className = "legend"; lg.style.color = css("--muted");
+    lg.innerHTML = `<span><i style="background:var(--ours);height:8px;width:12px"></i>${opt.ours || "Our model"}</span><span><i style="background:var(--tree);height:8px;width:12px"></i>${opt.tree || "Gradient boosting"}</span>`;
+    box.appendChild(lg);
+    const W = 600, L = opt.label || 190, R = 64, bh = 14, gap = 4, rowH = 2 * bh + gap + 22, H = rows.length * rowH + 22;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": title }, box);
+    const max = opt.max || 100, x = v => L + (W - L - R) * v / max;
+    const ink = css("--muted"), fg = css("--fg"), rule = css("--rule");
+    (opt.ticks || [0, 25, 50, 75, 100]).forEach(v => { el("line", { x1: x(v), x2: x(v), y1: 6, y2: H - 16, stroke: rule, "stroke-width": 1 }, svg); el("text", { x: x(v), y: H - 2, "text-anchor": "middle", "font-size": 11, fill: ink }, svg).textContent = (opt.fmt || (v => v + "%"))(v); });
+    rows.forEach((r, k) => {
+      const y0 = 8 + k * rowH;
+      el("text", { x: 0, y: y0 + bh + 2, "font-size": 12.5, fill: fg, "font-weight": 500 }, svg).textContent = r.label;
+      if (r.sub) el("text", { x: 0, y: y0 + bh + 18, "font-size": 11, fill: ink }, svg).textContent = r.sub;
+      [["ours", r.ours, r.oursNote], ["tree", r.tree, r.treeNote]].forEach(([s, v, note], j) => {
+        const y = y0 + j * (bh + gap), w = Math.max(2, x(v) - L);
+        const bar = el("path", { d: `M${L} ${y} h${w - 4} a4 4 0 0 1 4 4 v${bh - 8} a4 4 0 0 1 -4 4 h${-(w - 4)} Z`, fill: css(s === "ours" ? "--ours" : "--tree") }, svg);
+        el("text", { x: x(v) + 6, y: y + bh - 3, "font-size": 11.5, fill: fg, "font-variant-numeric": "tabular-nums" }, svg).textContent = (opt.val || (v => v + "%"))(v);
+        const h = el("rect", { x: L, y: y - 1, width: W - L - R + 40, height: bh + 2, class: "hit" }, svg);
+        hover(h, `<b>${r.label}</b><br>${s === "ours" ? (opt.ours || "Our model") : (opt.tree || "Gradient boosting")}: ${(opt.val || (v => v + "%"))(v)}${note ? "<br>" + note : ""}`);
+      });
+    });
+  }
+
+  /* Dumbbell: cause F1, ours vs tree, at home and on the new maker. */
+  function dumbbell() {
+    const box = document.getElementById("causeChart"); box.textContent = "";
+    const t = document.createElement("p"); t.className = "ttl"; t.textContent = "Cause of a stop, weather or turbine: macro F1"; box.appendChild(t);
+    const lg = document.createElement("div"); lg.className = "legend"; lg.style.color = css("--muted");
+    lg.innerHTML = `<span><i style="background:var(--ours);height:10px;width:10px;border-radius:50%"></i>Our language model</span><span><i style="background:var(--tree);height:10px;width:10px;border-radius:50%"></i>Gradient-boosting tree</span>`; box.appendChild(lg);
+    const rows = [
+      { label: "At home", sub: "Kelmarsh 2016–18, pitch often missing", ours: 0.518, tree: 0.918 },
+      { label: "On a maker it never saw", sub: "Hill of Towie 2016–24, 1,741 stops", ours: 0.838, tree: 0.766 },
+    ];
+    const W = 600, L = 200, R = 24, rowH = 52, H = rows.length * rowH + 26, lo = 0.4, hi = 1.0;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Cause F1: at home ours 0.518 vs tree 0.918; on the new maker ours 0.838 vs tree 0.766" }, box);
+    const x = v => L + (W - L - R) * (v - lo) / (hi - lo), ink = css("--muted"), fg = css("--fg"), rule = css("--rule"), bg = css("--bg");
+    [0.4, 0.6, 0.8, 1.0].forEach(v => { el("line", { x1: x(v), x2: x(v), y1: 4, y2: H - 18, stroke: rule, "stroke-width": 1 }, svg); el("text", { x: x(v), y: H - 4, "text-anchor": "middle", "font-size": 11, fill: ink }, svg).textContent = v.toFixed(1); });
+    rows.forEach((r, k) => {
+      const y = 20 + k * rowH;
+      el("text", { x: 0, y: y + 1, "font-size": 12.5, "font-weight": 500, fill: fg }, svg).textContent = r.label;
+      el("text", { x: 0, y: y + 17, "font-size": 11, fill: ink }, svg).textContent = r.sub;
+      el("line", { x1: x(Math.min(r.ours, r.tree)), x2: x(Math.max(r.ours, r.tree)), y1: y, y2: y, stroke: ink, "stroke-width": 2 }, svg);
+      [["ours", r.ours], ["tree", r.tree]].forEach(([s, v]) => {
+        el("circle", { cx: x(v), cy: y, r: 7, fill: css(s === "ours" ? "--ours" : "--tree"), stroke: bg, "stroke-width": 2 }, svg);
+        const above = (s === "ours") === (r.ours > r.tree);
+        el("text", { x: x(v), y: above ? y - 12 : y + 22, "text-anchor": "middle", "font-size": 11.5, fill: fg, "font-variant-numeric": "tabular-nums" }, svg).textContent = v.toFixed(3);
+        const h = el("circle", { cx: x(v), cy: y, r: 14, class: "hit" }, svg);
+        hover(h, `<b>${r.label}</b> · ${r.sub}<br>${s === "ours" ? "Our language model" : "Tree"}: F1 ${v.toFixed(3)}`);
+      });
+    });
+  }
+
+  /* Fix check: median gain and 90% interval per reference, with the pre-set bar shaded. */
+  function fixChart() {
+    const box = document.getElementById("fixChart"); box.textContent = "";
+    const t = document.createElement("p"); t.className = "ttl"; t.textContent = "Energy gain after the upgrade, 53 days: median and 90% interval"; box.appendChild(t);
+    const rows = [{ label: "Reference B: own power curve", m: 6.9, lo: -4.1, hi: 9.6 }, { label: "Reference A: neighbour turbines", m: 8.0, lo: 6.7, hi: 13.3 }];
+    const W = 600, L = 200, R = 24, rowH = 46, H = rows.length * rowH + 34, a = -6, b = 15;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Reference B +6.9% [−4.1, +9.6]; reference A +8.0% [+6.7, +13.3]; pre-set bar +1.5% to +7%" }, box);
+    const x = v => L + (W - L - R) * (v - a) / (b - a), ink = css("--muted"), fg = css("--fg"), rule = css("--rule"), acc = css("--accent");
+    el("rect", { x: x(1.5), y: 4, width: x(7) - x(1.5), height: H - 24, fill: acc, "fill-opacity": 0.12 }, svg);
+    el("text", { x: (x(1.5) + x(7)) / 2, y: 15, "text-anchor": "middle", "font-size": 10.5, fill: ink }, svg).textContent = "pre-set bar";
+    [-5, 0, 5, 10, 15].forEach(v => { el("line", { x1: x(v), x2: x(v), y1: 4, y2: H - 20, stroke: v === 0 ? ink : rule, "stroke-width": 1 }, svg); el("text", { x: x(v), y: H - 6, "text-anchor": "middle", "font-size": 11, fill: ink }, svg).textContent = (v > 0 ? "+" : "") + v + "%"; });
+    rows.forEach((r, k) => {
+      const y = 34 + k * rowH;
+      el("text", { x: 0, y: y + 4, "font-size": 12.5, "font-weight": 500, fill: fg }, svg).textContent = r.label;
+      el("line", { x1: x(r.lo), x2: x(r.hi), y1: y, y2: y, stroke: fg, "stroke-width": 2, "stroke-linecap": "round" }, svg);
+      el("circle", { cx: x(r.m), cy: y, r: 6, fill: fg }, svg);
+      el("text", { x: x(r.m), y: y - 11, "text-anchor": "middle", "font-size": 11.5, fill: fg, "font-variant-numeric": "tabular-nums" }, svg).textContent = "+" + r.m.toFixed(1) + "%";
+      const h = el("rect", { x: x(r.lo) - 6, y: y - 10, width: x(r.hi) - x(r.lo) + 12, height: 20, class: "hit" }, svg);
+      hover(h, `<b>${r.label}</b><br>Median +${r.m.toFixed(1)}%<br>90% interval ${r.lo > 0 ? "+" : ""}${r.lo.toFixed(1)}% to +${r.hi.toFixed(1)}%`);
+    });
+  }
+
+  function draw() {
+    dayChart();
+    bars("stopsChart", "Stops caught on Hill of Towie, at the alarm level set on the Senvion farms", [
+      { label: "2016–2021, scored once", sub: "2,556 stops", ours: 91.6, tree: 73.2, oursNote: "2,341 caught · 8 false alarms", treeNote: "1,870 caught · 5 false alarms" },
+      { label: "2023–2024", sub: "796 stops", ours: 95.2, tree: 80.2, oursNote: "758 caught · 2 false alarms", treeNote: "638 caught · 2 false alarms" },
+    ], { label: 170, val: v => v.toFixed(1) + "%" });
+    dumbbell();
+    bars("edpChart", "Running-low faults on a new farm (EDP), alarm level carried over", [
+      { label: "Ordinary windows flagged", sub: "target 3%, lower is better", ours: 4.5, tree: 18 },
+      { label: "Losses found", sub: "both held to 3% of windows", ours: 50, tree: 77 },
+    ], { label: 170, tree: "Tree", val: v => (Number.isInteger(v) ? v : v.toFixed(1)) + "%" });
+    fixChart();
+  }
+  draw();
+  let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(draw, 150); });
+  for (const q of ["(prefers-color-scheme: dark)"]) { try { matchMedia(q).addEventListener("change", draw); } catch (e) {} }
+  try { new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] }); } catch (e) {}
+
+  /* Deck controls: the deck is a same-origin page that listens for arrow keys and N. */
+  const deck = document.getElementById("deck"), count = document.getElementById("deckCount"), notesBtn = document.getElementById("deckNotes");
+  function deckDoc() { try { return deck.contentDocument; } catch (e) { return null; } }
+  function press(key) { const d = deckDoc(); if (!d) { deck.focus(); return; } const K = (deck.contentWindow && deck.contentWindow.KeyboardEvent) || KeyboardEvent; d.dispatchEvent(new K("keydown", { key, bubbles: true })); setTimeout(sync, 30); }
+  function sync() { try { const all = [...deckDoc().querySelectorAll(".slide")]; const n = all.findIndex(el => el.classList.contains("active")) + 1 || 1; count.textContent = `Slide ${n} / ${all.length || 13}`; } catch (e) {} }
+  document.getElementById("deckPrev").addEventListener("click", () => press("ArrowLeft"));
+  document.getElementById("deckNext").addEventListener("click", () => press("ArrowRight"));
+  notesBtn.addEventListener("click", () => { press("n"); notesBtn.setAttribute("aria-pressed", notesBtn.getAttribute("aria-pressed") === "true" ? "false" : "true"); });
+  deck.addEventListener("load", () => { sync(); try { deck.contentWindow.addEventListener("hashchange", sync); } catch (e) {} });
+
+  /* Section index: mark the section in view. */
+  const links = [...document.querySelectorAll(".top nav a")];
+  const map = new Map(links.map(a => [a.getAttribute("href").slice(1), a]));
+  try {
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { links.forEach(a => a.classList.remove("on")); const a = map.get(e.target.id); if (a) a.classList.add("on"); } }), { rootMargin: "-45% 0px -50% 0px" });
+    map.forEach((_, id) => { const s = document.getElementById(id); if (s) io.observe(s); });
+  } catch (e) {}
+})();
+</script>
+
+</body>
+</html>

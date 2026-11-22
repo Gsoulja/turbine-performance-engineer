@@ -1,0 +1,2 @@
+{"schema":"windmonitor.model/1","farm":"kelmarsh","time":"2020-06-12T10:40:00Z","model":{"name":"example","version":"illustrative"},"turbines":{"T04":{"status":"low","cause":"possible yaw misalignment","diagnosis":"Illustrative text, not a real model output.","next_step":"Check yaw alignment.","confidence":0.7,"evidence":["example"]}}}
+{"schema":"windmonitor.model/1","farm":"kelmarsh","time":"2020-06-12T10:50:00Z","model":{"name":"example","version":"illustrative"},"turbines":{"T04":{"status":"low","cause":"possible yaw misalignment","confidence":0.72}}}

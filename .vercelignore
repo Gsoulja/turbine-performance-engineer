@@ -1,0 +1,4 @@
+.env*
+.vercel
+.gitignore
+__pycache__

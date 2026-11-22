@@ -1,0 +1,35 @@
+{
+ "files": [
+  "days_towie.json",
+  "stops_kelmarsh.json",
+  "fixcheck_towie_t13.json",
+  "checks.json",
+  "days_towie_curtailment.json",
+  "days_kelmarsh_underperformance.json"
+ ],
+ "rows": {
+  "towie": [
+   "T01.csv",
+   "T02.csv",
+   "T03.csv",
+   "T04.csv",
+   "T05.csv",
+   "T06.csv",
+   "T07.csv",
+   "T08.csv",
+   "T09.csv",
+   "T10.csv",
+   "T11.csv",
+   "T12.csv",
+   "T13.csv",
+   "T14.csv",
+   "T15.csv",
+   "T16.csv",
+   "T17.csv",
+   "T18.csv",
+   "T19.csv",
+   "T20.csv",
+   "T21.csv"
+  ]
+ }
+}

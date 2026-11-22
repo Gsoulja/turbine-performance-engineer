@@ -1,0 +1,397 @@
+{
+ "schema": "windmonitor.days/1",
+ "use_case": "underperformance",
+ "farm": "kelmarsh",
+ "model": {
+  "name": "gradient-boosting tree",
+  "version": "frozen"
+ },
+ "answered_by": "chosen over our language model, which failed its validation bar here",
+ "question": "Is this turbine running below what its wind should give?",
+ "row_unit": "one row = the 30 days ending on that date, every 7 days; only windows around real logged events",
+ "threshold": 0.999129,
+ "threshold_basis": "at most 3% of real ordinary windows flagged on Fuhrländer, a farm not in training; set before any test. One row = the 30 days ending on that date",
+ "trained_on": "losses injected into real Kelmarsh, Penmanshiel and Hill of Towie windows; no real event used. In-fleet: these turbines were seen in training, these windows were not",
+ "logged_basis": "yes: Kelmarsh 4's own curtailment in the operator's status log (2023, a real cap). no: wind-sensor faults of the v3 labels, found with the second anemometer; the power was normal",
+ "check_note": "Checked against the operator's status log (the cap) and the second anemometer with the neighbours' wind (sensor faults). No ordinary windows here, so no ordinary false alarms. On a new farm (EDP) this threshold, carried over unchanged, flagged 18% of ordinary windows.",
+ "cohort_result": {
+  "period": "the real events of Kelmarsh and Penmanshiel 2021-23 (two-anemometer view)",
+  "stops": 19,
+  "caught": 16,
+  "false_alarms": 0,
+  "sensor_fault_windows": 56,
+  "sensor_named_sensor": 52,
+  "note": "stops = capped windows; false_alarms = sensor-fault windows called a loss"
+ },
+ "window": {
+  "from": "2022-04-25",
+  "to": "2023-07-31",
+  "rule": "every Kelmarsh window around a real logged event (two-anemometer view only; each window also exists in a one-anemometer view, never counted twice)",
+  "capped": 19,
+  "caught": 16,
+  "missed": 3,
+  "sensor_fault_windows": 17,
+  "false_alarms": 0
+ },
+ "limits": "In-fleet: Kelmarsh is a training farm of this tree (the windows avoid training days). There is no ground truth for real running losses beyond these events. On a new farm (EDP) the Fuhrländer threshold, carried over unchanged, flags 18% of ordinary windows: the threshold does not transfer; the planned fix calibrates it on the new farm's first 90 days. This is the first tree (set v1); a newer one (set v3) finds 0.974 against 0.916 on Fuhrländer and is not yet scored on a new farm. Our rule-based detector failed its pre-registered Hill of Towie test: 7.7-13.7% of ordinary 30-day windows flagged.",
+ "days": [
+  {
+   "date": "2022-04-25",
+   "turbine": "T01",
+   "p_yes": 0.0013,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "sensor"
+  },
+  {
+   "date": "2022-07-25",
+   "turbine": "T02",
+   "p_yes": 0.0,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "sensor"
+  },
+  {
+   "date": "2022-08-01",
+   "turbine": "T02",
+   "p_yes": 0.0,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "sensor"
+  },
+  {
+   "date": "2022-08-15",
+   "turbine": "T02",
+   "p_yes": 0.0,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "sensor"
+  },
+  {
+   "date": "2022-08-22",
+   "turbine": "T02",
+   "p_yes": 0.0,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "none"
+  },
+  {
+   "date": "2022-08-29",
+   "turbine": "T02",
+   "p_yes": 0.9841,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "sensor"
+  },
+  {
+   "date": "2022-09-05",
+   "turbine": "T02",
+   "p_yes": 0.1252,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "none"
+  },
+  {
+   "date": "2022-10-03",
+   "turbine": "T02",
+   "p_yes": 0.2418,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "sensor"
+  },
+  {
+   "date": "2022-10-10",
+   "turbine": "T02",
+   "p_yes": 0.5201,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "sensor"
+  },
+  {
+   "date": "2022-10-17",
+   "turbine": "T02",
+   "p_yes": 0.0042,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "sensor"
+  },
+  {
+   "date": "2022-10-24",
+   "turbine": "T02",
+   "p_yes": 0.0009,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "sensor"
+  },
+  {
+   "date": "2022-10-31",
+   "turbine": "T02",
+   "p_yes": 0.0002,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "sensor"
+  },
+  {
+   "date": "2022-11-07",
+   "turbine": "T02",
+   "p_yes": 0.0,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "sensor"
+  },
+  {
+   "date": "2022-11-14",
+   "turbine": "T02",
+   "p_yes": 0.0,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "none"
+  },
+  {
+   "date": "2023-02-27",
+   "turbine": "T04",
+   "p_yes": null,
+   "answer": null,
+   "logged": "yes",
+   "in_cohort": false,
+   "reason": "left out: this window shares days with a training window of the same turbine"
+  },
+  {
+   "date": "2023-03-06",
+   "turbine": "T04",
+   "p_yes": null,
+   "answer": null,
+   "logged": "yes",
+   "in_cohort": false,
+   "reason": "left out: this window shares days with a training window of the same turbine"
+  },
+  {
+   "date": "2023-03-13",
+   "turbine": "T04",
+   "p_yes": 1.0,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "limit",
+   "lost_pct": 21.2
+  },
+  {
+   "date": "2023-03-20",
+   "turbine": "T04",
+   "p_yes": 1.0,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "limit",
+   "lost_pct": 20.9
+  },
+  {
+   "date": "2023-03-27",
+   "turbine": "T04",
+   "p_yes": 1.0,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "pitch",
+   "lost_pct": 21.8
+  },
+  {
+   "date": "2023-04-03",
+   "turbine": "T04",
+   "p_yes": 1.0,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "limit",
+   "lost_pct": 21.2
+  },
+  {
+   "date": "2023-04-10",
+   "turbine": "T04",
+   "p_yes": 1.0,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "limit",
+   "lost_pct": 21.1
+  },
+  {
+   "date": "2023-04-17",
+   "turbine": "T04",
+   "p_yes": 1.0,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "limit",
+   "lost_pct": 21.2
+  },
+  {
+   "date": "2023-04-17",
+   "turbine": "T05",
+   "p_yes": 0.0,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "sensor"
+  },
+  {
+   "date": "2023-04-24",
+   "turbine": "T04",
+   "p_yes": 1.0,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "limit",
+   "lost_pct": 20.1
+  },
+  {
+   "date": "2023-04-24",
+   "turbine": "T05",
+   "p_yes": 0.0,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "sensor"
+  },
+  {
+   "date": "2023-05-01",
+   "turbine": "T04",
+   "p_yes": 1.0,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "limit",
+   "lost_pct": 19.2
+  },
+  {
+   "date": "2023-05-01",
+   "turbine": "T05",
+   "p_yes": 0.0,
+   "answer": "no",
+   "logged": "no",
+   "in_cohort": true,
+   "cause": "sensor"
+  },
+  {
+   "date": "2023-05-08",
+   "turbine": "T04",
+   "p_yes": 1.0,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "limit",
+   "lost_pct": 19.5
+  },
+  {
+   "date": "2023-05-15",
+   "turbine": "T04",
+   "p_yes": 1.0,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "limit",
+   "lost_pct": 14.4
+  },
+  {
+   "date": "2023-05-22",
+   "turbine": "T04",
+   "p_yes": 0.9999,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "limit",
+   "lost_pct": 9.8
+  },
+  {
+   "date": "2023-05-29",
+   "turbine": "T04",
+   "p_yes": 0.9998,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "limit",
+   "lost_pct": 8.9
+  },
+  {
+   "date": "2023-06-05",
+   "turbine": "T04",
+   "p_yes": 0.9999,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "limit",
+   "lost_pct": 9.1
+  },
+  {
+   "date": "2023-06-12",
+   "turbine": "T04",
+   "p_yes": 0.0,
+   "answer": "no",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "none"
+  },
+  {
+   "date": "2023-06-19",
+   "turbine": "T04",
+   "p_yes": 0.0,
+   "answer": "no",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "none"
+  },
+  {
+   "date": "2023-06-26",
+   "turbine": "T04",
+   "p_yes": 0.0,
+   "answer": "no",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "sensor"
+  },
+  {
+   "date": "2023-07-03",
+   "turbine": "T04",
+   "p_yes": 1.0,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "limit",
+   "lost_pct": 10.7
+  },
+  {
+   "date": "2023-07-24",
+   "turbine": "T04",
+   "p_yes": 1.0,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "limit",
+   "lost_pct": 14.6
+  },
+  {
+   "date": "2023-07-31",
+   "turbine": "T04",
+   "p_yes": 1.0,
+   "answer": "yes",
+   "logged": "yes",
+   "in_cohort": true,
+   "cause": "limit",
+   "lost_pct": 15.8
+  }
+ ]
+}
