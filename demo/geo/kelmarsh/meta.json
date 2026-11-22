@@ -1,0 +1,84 @@
+{
+ "farm": "kelmarsh",
+ "size": 6000.0,
+ "grid": 321,
+ "img": 2048,
+ "heightScale": 0.1,
+ "baseElevation": 140.5,
+ "centre": {
+  "lat": 52.40146083333334,
+  "lon": -0.943105
+ },
+ "turbines": [
+  {
+   "id": "T01",
+   "x": -273.3,
+   "z": 95.3,
+   "lat": 52.400604,
+   "lon": -0.947133,
+   "y": 4.3,
+   "tileElev": 144.8,
+   "csvElev": 145.598
+  },
+  {
+   "id": "T02",
+   "x": -435.7,
+   "z": -121.2,
+   "lat": 52.402551,
+   "lon": -0.949527,
+   "y": 15.4,
+   "tileElev": 156.0,
+   "csvElev": 156.577
+  },
+  {
+   "id": "T03",
+   "x": -73.6,
+   "z": -263.9,
+   "lat": 52.403834,
+   "lon": -0.94419,
+   "y": 12.3,
+   "tileElev": 152.8,
+   "csvElev": 153.477
+  },
+  {
+   "id": "T04",
+   "x": 132.6,
+   "z": 298.0,
+   "lat": 52.398781,
+   "lon": -0.94115,
+   "y": 5.4,
+   "tileElev": 146.0,
+   "csvElev": 146.313
+  },
+  {
+   "id": "T05",
+   "x": 174.2,
+   "z": -94.2,
+   "lat": 52.402308,
+   "lon": -0.940537,
+   "y": 1.8,
+   "tileElev": 142.4,
+   "csvElev": 142.901
+  },
+  {
+   "id": "T06",
+   "x": 475.7,
+   "z": 86.0,
+   "lat": 52.400687,
+   "lon": -0.936093,
+   "y": -5.7,
+   "tileElev": 134.9,
+   "csvElev": 135.039
+  }
+ ],
+ "attribution": {
+  "imagery": "Imagery: Esri, Maxar, Earthstar Geographics and the GIS user community",
+  "elevation": "Elevation: Mapzen/Tilezen terrain tiles (SRTM, NED, EU-DEM and others)",
+  "licenceChecked": false
+ },
+ "baked": "2026-11-20",
+ "elevationCheck": {
+  "meanAbsDiffM": 0.5,
+  "maxAbsDiffM": 0.8
+ }
+}

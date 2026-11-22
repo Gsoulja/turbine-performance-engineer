@@ -1,0 +1,225 @@
+WEBVTT
+
+00:00:01.170 --> 00:00:04.410
+Kann eine KI eine Maschine verstehen, die
+sie noch nie gesehen hat?
+
+00:00:05.090 --> 00:00:09.950
+9. Juli 2023. Ein Windpark in Schottland.
+Der Wind weht.
+
+00:00:10.810 --> 00:00:13.793
+Eine Anlage erzeugt 8 Megawattstunden.
+
+00:00:13.873 --> 00:00:17.970
+Eine andere im selben Park: nichts. Den
+ganzen Tag.
+
+00:00:19.190 --> 00:00:21.831
+Unsere KI hatte Anlagen dieses Herstellers
+nie gesehen.
+
+00:00:21.911 --> 00:00:23.870
+Sie hat den Stillstand trotzdem erkannt.
+
+00:00:24.650 --> 00:00:25.588
+Wir sind sololeveling
+
+00:00:25.668 --> 00:00:28.700
+und bauen einen Performance-Ingenieur für
+jede Windenergieanlage.
+
+00:00:28.790 --> 00:00:33.391
+Europäische Windparks erzeugen rund 9 %
+weniger Energie,
+
+00:00:33.471 --> 00:00:37.160
+als bei ihrer Finanzierung angenommen wurde.
+
+00:00:37.740 --> 00:00:45.100
+Jedes zurückgewonnene Prozent ist rund
+3.700 £ pro Anlage und Jahr wert.
+
+00:00:45.780 --> 00:00:50.083
+Doch das Warum hängt bis heute von den
+Alarmcodes jedes Herstellers ab
+
+00:00:50.163 --> 00:00:51.860
+und vom Wort des Anbieters.
+
+00:00:54.490 --> 00:00:57.770
+Wir haben es auf offenen Daten aufgebaut.
+
+00:00:58.360 --> 00:01:03.150
+Drei britische Windparks, 41 Anlagen, zwei
+Hersteller, alle in TimeNet.
+
+00:01:03.630 --> 00:01:09.910
+Jedes Label gegen unabhängige Belege
+geprüft. OpenTSLM liest sechs Rohsignale
+
+00:01:10.420 --> 00:01:14.830
+über den Fusionsadapter, den wir ergänzt
+haben, und antwortet in Worten.
+
+00:01:18.030 --> 00:01:22.388
+Nur mit Senvion trainiert und an Siemens
+getestet,
+
+00:01:22.468 --> 00:01:26.650
+erkennt es 92 % der Stillstände, gegenüber
+73 %
+
+00:01:27.340 --> 00:01:29.400
+beim Gradient-Boosting-Baum.
+
+00:01:29.910 --> 00:01:38.170
+Bei der Ursache eines Stillstands lag der
+F1-Wert bei 84 %, gegenüber 77 % beim Baum.
+
+00:01:41.040 --> 00:01:44.005
+Sechs zurückgehaltene Jahre, einmal
+ausgewertet:
+
+00:01:44.085 --> 00:01:46.800
+Es schlug den Baum in jedem einzelnen Jahr,
+
+00:01:47.500 --> 00:01:52.400
+mit Fehlalarmen an nur 0,02 % der
+Anlagentage.
+
+00:01:52.460 --> 00:01:58.280
+Ein Abregelungsdetektor, trainiert ohne ein
+einziges echtes Abregelungs-Label,
+
+00:01:58.700 --> 00:02:04.340
+erkannte 97 % der Tage, an denen das Netz
+die Leistung drosselte.
+
+00:02:08.260 --> 00:02:13.540
+Jeder Stillstand bekommt Megawattstunden,
+auf 5 % genau an der Summe des Betreibers,
+
+00:02:14.260 --> 00:02:21.800
+und eine Ursache, Wetter oder Anlage,
+richtig bei 99,7 % neuer Stillstände.
+
+00:02:25.590 --> 00:02:27.600
+Jedes Label zu prüfen hat sich gelohnt.
+
+00:02:27.670 --> 00:02:32.770
+50 % der „Minderleistungs“-Tage waren ein
+defektes Anemometer.
+
+00:02:33.210 --> 00:02:38.210
+Ein Tool, das aus dem Betreiberlog lernt,
+lernt dessen Fehler.
+
+00:02:40.210 --> 00:02:42.292
+Hat die Maßnahme gewirkt?
+
+00:02:42.372 --> 00:02:49.800
+Bei den neuen Blättern von Anlage 13 zeigen
+beide Referenzen einen Gewinn: 7 % und 8 %.
+
+00:02:50.730 --> 00:02:54.590
+Aber das Intervall ist noch breit, also
+behaupten wir es noch nicht.
+
+00:02:57.760 --> 00:03:03.020
+Deren Ursachen sind ihr Wort. Unsere werden
+öffentlich geprüft.
+
+00:03:03.780 --> 00:03:06.260
+Jeder Test war festgelegt, bevor wir ihn
+ausgeführt haben.
+
+00:03:09.030 --> 00:03:12.350
+Hier der ganze Kreislauf, live, mit echten
+Daten.
+
+00:03:13.150 --> 00:03:16.910
+Zuerst erkennen wir: Anlage 12 steht still.
+
+00:03:17.470 --> 00:03:20.370
+Dann erklären wir, was es gekostet hat, nach
+Ursache,
+
+00:03:20.870 --> 00:03:23.350
+jede Antwort neben ihren unabhängigen
+Prüfungen.
+
+00:03:24.050 --> 00:03:28.033
+Dann handeln wir: „Fix first“ ordnet die
+Anlagen nach dem Geld,
+
+00:03:28.113 --> 00:03:29.670
+das auf dem Spiel steht,
+
+00:03:30.450 --> 00:03:33.910
+und der Copilot entwirft den Arbeitsauftrag,
+den ein Mensch freigibt.
+
+00:03:35.270 --> 00:03:37.570
+Und wir können die Arbeit überprüfen:
+
+00:03:38.210 --> 00:03:40.870
+Anlage 13 hat neue Blätter bekommen, prüfen
+wir es.
+
+00:03:41.710 --> 00:03:43.100
+Und es lernt:
+
+00:03:43.630 --> 00:03:46.430
+Ingenieure bewerten die Antwort,
+
+00:03:47.110 --> 00:03:51.170
+und sie bleibt offen, bis unabhängige Belege
+sie bestätigen.
+
+00:03:52.050 --> 00:03:54.614
+Ein neu trainiertes Modell ersetzt dieses
+nur,
+
+00:03:54.694 --> 00:03:57.710
+wenn es in den öffentlichen Tests besser
+abschneidet.
+
+00:04:00.730 --> 00:04:03.930
+Wohin das führt: ein Modell, das jedes
+Signal liest
+
+00:04:03.930 --> 00:04:06.750
+und den Arbeitsauftrag selbst schreibt.
+
+00:04:09.210 --> 00:04:14.650
+Wenn Modelle so schlussfolgern, ist das
+Schwierige zu wissen, wann sie recht haben.
+
+00:04:15.250 --> 00:04:17.200
+Wir bauen beides.
+
+00:04:19.150 --> 00:04:23.210
+Als Nächstes: ein zweiter Hersteller,
+Robustheit gegen fehlende Sensoren
+
+00:04:23.730 --> 00:04:27.450
+und ein Modell für jede Frage.
+
+00:04:28.170 --> 00:04:30.600
+Wir trainieren es bereits und verbessern es
+weiter.
+
+00:04:30.650 --> 00:04:33.270
+Ein Modell kann alle Fragen lernen.
+
+00:04:34.450 --> 00:04:37.770
+Also: Kann eine KI eine Maschine verstehen,
+die sie noch nie gesehen hat?
+
+00:04:38.630 --> 00:04:42.850
+Bei Stillständen und ihren Ursachen, bei
+einem neuen Hersteller: schon heute.
+
+00:04:43.350 --> 00:04:45.500
+Danke.

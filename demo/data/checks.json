@@ -1,0 +1,3147 @@
+{
+ "schema": "windmonitor.checks/1",
+ "note": "Independent evidence next to each answer. The operator's log is one source, not ground truth; where sources disagree, both are shown.",
+ "track_record": [
+  {
+   "question": "Did this turbine stop for 60 minutes or more at wind of 4 m/s or more?",
+   "answered_by": "time-series language model (OpenTSLM + fusion adapter, 3 seeds)",
+   "test": "Trained on Senvion; alarm level set on Senvion only; Hill of Towie (Siemens, never seen) 2016-2021, scored once",
+   "result": "91.6% of 2,556 stops caught, 8 false alarms in 37,899 turbine-days (gradient boosting: 73.2%, 5)",
+   "also": "2023-24: 758 of 796 stops caught, 2 false alarms",
+   "limits": "Gradient boosting ranks stop days slightly better (average precision 0.996 vs 0.989). Stops under 60 minutes are not in the test."
+  },
+  {
+   "question": "Was this turbine told to cut its output?",
+   "answered_by": "gradient-boosting detector, frozen",
+   "test": "Hill of Towie 2025-26, 768 turbine-days on 37 grid-dispatch dates",
+   "result": "96.6% caught; 8.1% of clean days alarmed",
+   "limits": "On later Senvion logged days 42.5% caught; most show no drop in power."
+  },
+  {
+   "question": "Is this turbine running below what its wind should give?",
+   "answered_by": "gradient-boosting tree, frozen (our language model failed its validation bar)",
+   "test": "Real events on Kelmarsh and Penmanshiel never used in training (a logged power cap, wind-sensor faults); in-fleet: these turbines' other windows were in training; alarm level set on Fuhrländer",
+   "result": "16 of 19 capped 30-day windows caught; 0 of 56 sensor-fault windows called a loss (52 named a sensor fault)",
+   "limits": "No ground truth for real running losses beyond these events. On a new farm (EDP) the Fuhrländer threshold, carried over unchanged, flags 18% of ordinary windows: it does not transfer (planned fix: calibrate on the new farm's first 90 days). Our rule-based detector failed its pre-registered Hill of Towie test: 7.7-13.7% of ordinary 30-day windows flagged."
+  },
+  {
+   "question": "How much energy did this stop cost?",
+   "answered_by": "code (energy below the expected power curve)",
+   "test": "Against the operator's own lost-energy figure",
+   "result": "correlation 0.988 over 1,338 stops; 0.996 on 2023-24",
+   "limits": "Total within -4.7%."
+  },
+  {
+   "question": "Was it the weather or the turbine side?",
+   "answered_by": "gradient-boosting tree, frozen",
+   "test": "Fresh 2023-24 test, bar set in advance (macro F1 0.8+, energy share within 5 points, both farms)",
+   "result": "312 of 313 comment-labelled stops right; energy split within 3.4 points: HOLDS",
+   "limits": "Within the fleet it trained on. At home the language model fell short of the tree (2016-18 test, mostly where pitch was not recorded)."
+  },
+  {
+   "question": "Weather or turbine side, on a maker it never saw?",
+   "answered_by": "time-series language model (trained on Senvion stops, frozen)",
+   "test": "Hill of Towie (Siemens) 2016-2024, 1,741 stops, scored once; nothing trained or tuned there; bar set in advance",
+   "result": "F1 0.838 against the tree's 0.766 (+0.072, 95% interval +0.032 to +0.116): PASS; 748 of 876 weather stops found against 635",
+   "limits": "One Siemens farm; labels from controller stop timers whose meaning is not officially documented; no maintenance class."
+  },
+  {
+   "question": "Did the fix work?",
+   "answered_by": "statistics, two independent references",
+   "test": "AeroUp blades on Hill of Towie T13, bar set in advance",
+   "result": "Reference B +6.9% [-4.1, +9.6], reference A +8.0% [+6.7, +13.3] over 53 days: not yet confirmed",
+   "limits": "The interval for B still includes 0; more months will narrow it."
+  }
+ ],
+ "loop_rule": "An engineer's verdict is stored as 'pending check'. It becomes a training label only when independent evidence (the second wind sensor, grid-dispatch records, the grid meter, the operator's own energy figure) agrees with it. A retrained model replaces the current one only if it beats it on the fixed public tests.",
+ "stops_kelmarsh": {
+  "summary": {
+   "stops": 88,
+   "checks_agree": 284,
+   "checks_scored": 302,
+   "stops_with_a_disagreement": 16
+  },
+  "rule_energy_close": "within 20% or 0.5 MWh of the operator's figure",
+  "by_event": {
+   "100064": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "16.4 MWh (ours 18.4 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - remote",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100065": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "5.8 MWh (ours 6.2 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - remote",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100195": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "26.9 MWh (ours 31.5 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "weather",
+      "text": "Icing (stop)",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100141": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "4.1 MWh (ours 3.4 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "weather",
+      "text": "Icing (stop)",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100000": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "4.0 MWh (ours 3.3 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "weather",
+      "text": "Icing (stop)",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "20% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100197": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "17.3 MWh (ours 13.7 MWh)",
+      "agrees": false,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "High particle count - waiting for SGRE to inspect | Recurrent Oil particle alarms - SGRE attended before calling endoscope inspector",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Particle Gear Alarm 24h",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 4
+   },
+   "100323": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.3 MWh (ours 0.4 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Recurrent anemometer faults - delay on getting parts",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Anemometer defect",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100198": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "10.6 MWh (ours 7.4 MWh)",
+      "agrees": false,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Recurrent Oil particle alarms - SGRE attended before calling endoscope inspector",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 4
+   },
+   "100333": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.0 MWh (ours 0.6 MWh)",
+      "agrees": false,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Recurrent anemometer faults - delay on getting parts",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Anemometer defect",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 4
+   },
+   "100200": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "7.8 MWh (ours 6.9 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Gearbox inspection - updated by DK incorrect before",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100366": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.3 MWh (ours 1.4 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Recurrent anemometer faults - delay on getting parts",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Anemometer defect",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100387": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "6.9 MWh (ours 7.0 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Anemometer defect",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100401": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.5 MWh (ours 0.5 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Anemometer defect",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "20% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100002": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.1 MWh (ours 0.0 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Maintenance",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100412": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.4 MWh (ours 1.5 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Anemometer defect",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100416": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.4 MWh (ours 0.5 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Anemometer fault",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Anemometer defect",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100419": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.6 MWh (ours 0.6 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Anemometer replaced",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Anemometer defect",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100146": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.4 MWh (ours 1.2 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100420": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.6 MWh (ours 1.4 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100004": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.1 MWh (ours 0.1 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100071": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.0 MWh (ours 1.0 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100072": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "7.2 MWh (ours 6.6 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100147": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "2.4 MWh (ours 2.0 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100148": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.2 MWh (ours 0.1 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100150": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "4.4 MWh (ours 4.1 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "NDE Bearing Replacement | Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100546": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.6 MWh (ours 0.3 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Chain hoist repaired",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100205": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "3.9 MWh (ours 4.8 MWh)",
+      "agrees": false,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 4
+   },
+   "100206": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "4.2 MWh (ours 3.6 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100547": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "14.9 MWh (ours 12.5 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "grid_park",
+      "text": "Grid loss",
+      "agrees": false,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 2,
+    "of": 3
+   },
+   "100208": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.7 MWh (ours 2.0 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100209": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "3.3 MWh (ours 2.6 MWh)",
+      "agrees": false,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 4
+   },
+   "100427": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "2.2 MWh (ours 1.8 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100548": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.7 MWh (ours 1.0 MWh)",
+      "agrees": false,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 4
+   },
+   "100428": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.5 MWh (ours 1.3 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Hoist repairs",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100551": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "8.1 MWh (ours 5.4 MWh)",
+      "agrees": false,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 4
+   },
+   "100553": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.7 MWh (ours 0.7 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100555": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.0 MWh (ours 0.0 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "40% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100430": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.2 MWh (ours 0.2 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100432": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "2.5 MWh (ours 2.1 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100433": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.9 MWh (ours 1.7 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual Service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100007": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.8 MWh (ours 0.7 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100434": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.5 MWh (ours 1.3 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Pitch Fault",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Battery voltage axis 3",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100078": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.2 MWh (ours 0.1 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - remote",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100079": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.6 MWh (ours 0.4 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - remote",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100153": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.6 MWh (ours 1.6 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Annual service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "20% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100080": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.2 MWh (ours 1.3 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Wind vane alignment",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100213": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "2.7 MWh (ours 2.9 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100437": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "199.7 MWh (ours 205.5 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Gear cooling fan - pats took a long time to source because it was not in the spares system.",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Overload fan oil cooler gear",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100215": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "193.2 MWh (ours 197.2 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Gearbox Exchange - delays due to high winds",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100216": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.3 MWh (ours 0.2 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Pat of gearbox exchange",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual brake",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100438": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "23.8 MWh (ours 22.5 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "grid_park",
+      "text": "Park master stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": null,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "100% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 2,
+    "of": 2
+   },
+   "100219": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "3.4 MWh (ours 3.0 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "grid_park",
+      "text": "Park master stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": null,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "100% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 2,
+    "of": 2
+   },
+   "100010": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "2.7 MWh (ours 2.1 MWh)",
+      "agrees": false,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "grid_park",
+      "text": "Park master stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": null,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "100% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 1,
+    "of": 2
+   },
+   "100156": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "4.2 MWh (ours 3.8 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "grid_park",
+      "text": "Park master stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": null,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "100% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 2,
+    "of": 2
+   },
+   "100084": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "3.0 MWh (ours 2.7 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "grid_park",
+      "text": "Park master stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": null,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "100% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 2,
+    "of": 2
+   },
+   "100560": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "4.2 MWh (ours 2.8 MWh)",
+      "agrees": false,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "grid_park",
+      "text": "Park master stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": null,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "100% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 1,
+    "of": 2
+   },
+   "100157": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "2.3 MWh (ours 2.7 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100223": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.6 MWh (ours 0.7 MWh)",
+      "agrees": false,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop without login",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid voltage lost at the stop",
+      "agrees": false,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 1,
+    "of": 3
+   },
+   "100562": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.1 MWh (ours 0.1 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100440": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.0 MWh (ours 0.0 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "20% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100159": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.0 MWh (ours 0.0 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100012": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.0 MWh (ours 0.5 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100086": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.3 MWh (ours 0.2 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100441": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "2.8 MWh (ours 2.6 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "grid_park",
+      "text": "Grid loss",
+      "agrees": false,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "25% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 1,
+    "of": 2
+   },
+   "100563": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "2.6 MWh (ours 2.0 MWh)",
+      "agrees": false,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "grid_park",
+      "text": "Grid loss",
+      "agrees": false,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "40% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 0,
+    "of": 2
+   },
+   "100231": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "3.1 MWh (ours 3.3 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Anemometer defect",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100449": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.6 MWh (ours 0.5 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100234": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "2.1 MWh (ours 2.3 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Anemometer fault - remote reset?",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Anemometer defect",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100235": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "30.2 MWh (ours 33.7 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Wind vane cleaned but needs to be replaced. Waiting on SGRE to return. | Anemometer replaced and aligned.",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Anemometer defect",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100464": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.0 MWh (ours 1.4 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "LMB unit in axis 3 replaced and new unit recalibrated",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100018": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.0 MWh (ours 0.0 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100094": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.0 MWh (ours 0.0 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual brake",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100238": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.3 MWh (ours 1.4 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100467": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.9 MWh (ours 1.5 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100020": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.1 MWh (ours 0.2 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Lift cable repair",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "20% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100021": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "4.2 MWh (ours 5.9 MWh)",
+      "agrees": false,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "6 month service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 4
+   },
+   "100166": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.2 MWh (ours 1.2 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100239": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "0.5 MWh (ours 0.3 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "20% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100574": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "1.5 MWh (ours 1.9 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100167": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "8.8 MWh (ours 8.7 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "weather",
+      "text": "Icing (anemometer)",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "20% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100240": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "12.4 MWh (ours 9.3 MWh)",
+      "agrees": false,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "weather",
+      "text": "Icing (anemometer)",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "60% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 2,
+    "of": 3
+   },
+   "100099": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "11.9 MWh (ours 10.4 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "weather",
+      "text": "Icing (anemometer)",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "100% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100468": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "10.1 MWh (ours 8.5 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "weather",
+      "text": "Icing (anemometer)",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "100% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100022": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "8.6 MWh (ours 9.0 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "weather",
+      "text": "Icing (anemometer)",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "60% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100575": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "7.1 MWh (ours 6.8 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "weather",
+      "text": "Icing (anemometer)",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 3
+   },
+   "100103": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "13.5 MWh (ours 15.6 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "converter cooling system low pressure (coolant topped up).",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Timeout ready for connection",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   },
+   "100469": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "2.0 MWh (ours 2.6 MWh)",
+      "agrees": false,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Semi-annual service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 3,
+    "of": 4
+   },
+   "100104": {
+    "checks": [
+     {
+      "source": "operator's lost-energy figure (Greenbyte)",
+      "says": "4.5 MWh (ours 4.3 MWh)",
+      "agrees": true,
+      "about": "energy"
+     },
+     {
+      "source": "operator's comment",
+      "says": "turbine",
+      "text": "Semi-annual service",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "maker's status codes (weaker)",
+      "says": "turbine",
+      "text": "Manual stop - on site",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "farm grid meter (PMU)",
+      "says": "grid normal at the stop",
+      "agrees": true,
+      "about": "cause"
+     },
+     {
+      "source": "neighbouring turbines",
+      "says": "0% of the others stopped at the same time",
+      "agrees": null,
+      "about": "context"
+     }
+    ],
+    "agree": 4,
+    "of": 4
+   }
+  }
+ },
+ "log_wrong_case": {
+  "title": "The log said icing. The evidence says a broken wind sensor.",
+  "stops": 32,
+  "turbines": [
+   "Penmanshiel 02",
+   "Penmanshiel 08"
+  ],
+  "years": [
+   2021,
+   2022
+  ],
+  "evidence": "On 31 of the 32 stops the turbine's two anemometers disagreed far more than usual (split -0.19 to -0.08, against about -0.02 on healthy turbines); on the other 1, both read 37% or more above the neighbouring turbines. Turbines with agreeing anemometers in the same weather did not ice.",
+  "why_it_matters": "A model trained on the log would learn that this weather causes icing, and would call sensor faults weather.",
+  "examples": [
+   {
+    "turbine": "Penmanshiel 08",
+    "start": "2021-02-03 09:13",
+    "log_said": "Icing (stop)",
+    "air_temp_min_c": 2.0,
+    "humidity_max_pct": 92,
+    "anemometer_split": -0.119
+   },
+   {
+    "turbine": "Penmanshiel 08",
+    "start": "2021-04-07 01:00",
+    "log_said": "Icing (stop)",
+    "air_temp_min_c": 0.1,
+    "humidity_max_pct": 64,
+    "anemometer_split": -0.106
+   },
+   {
+    "turbine": "Penmanshiel 08",
+    "start": "2022-04-07 08:43",
+    "log_said": "Icing (stop)",
+    "air_temp_min_c": 4.0,
+    "humidity_max_pct": 91,
+    "anemometer_split": -0.135
+   }
+  ]
+ }
+}
