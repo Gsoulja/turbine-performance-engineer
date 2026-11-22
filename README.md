@@ -7,7 +7,7 @@ TimeNet Online Hackathon, Round 1 · team sololeveling
 - **Live site:** https://turbine-performance-engineer.vercel.app
 - **Pitch video:** [media/pitch-video.mp4](media/pitch-video.mp4) (4:46; German subtitles in [media/pitch-video.de.vtt](media/pitch-video.de.vtt))
 - **Pitch slides:** [pitch.html](pitch.html) (←/→ to move, N for speaker notes, F for full screen)
-- **Monitor demo:** [demo/](demo/) (a replay of real data with the models' answers)
+- **Monitor demo:** [demo/](demo/?model=/feeds/towie-2023-07-stops-model.json) (a replay of real data with the models' answers; on Hill of Towie's real rows, the live view runs on the trained stops model's real answers from [feeds/](feeds/))
 - **Results and limits:** [RESULTS.md](RESULTS.md)
 - **Bring your own data:** in the demo, *Add a farm* loads your own 10-minute SCADA CSVs in the browser, with nothing uploaded (tutorial on the [site](https://turbine-performance-engineer.vercel.app/#own-data))
 - **Connect a model:** [connect/bridge.py](connect/bridge.py) feeds any model's answers into the demo (guide on the [site](https://turbine-performance-engineer.vercel.app/#connect); message contract in [demo/MODEL_FEED.md](demo/MODEL_FEED.md))
