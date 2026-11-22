@@ -5,9 +5,10 @@ asks predict_day() for answers, and serves them as windmonitor.model/1 messages 
 
     python3 bridge.py                 # serve at http://localhost:8790/latest
     python3 bridge.py --out feed.jsonl  # or write a file to load in the demo's Model feed dialog
+    python3 bridge.py --rows my_farm/   # your own CSVs (one per turbine), for a farm added with "Add a farm"
 
 Then open https://turbine-performance-engineer.vercel.app/demo/?model=http://localhost:8790/latest,
-choose Hill of Towie and press "Replay the real rows".
+choose Hill of Towie and press "Replay the real rows" (or choose your own farm).
 
 Python 3.9+, standard library only. The message contract: https://turbine-performance-engineer.vercel.app/demo/MODEL_FEED.md
 """
@@ -15,6 +16,7 @@ import argparse
 import csv
 import io
 import json
+import re
 import urllib.request
 from collections import defaultdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -24,8 +26,15 @@ SITE = "https://turbine-performance-engineer.vercel.app/demo/data/rows/towie"
 TURBINES = [f"T{i:02d}" for i in range(1, 22)]
 MODEL = {"name": "stand-in rule", "version": "bridge example"}   # name your model here; the page shows it
 STATUSES = {"normal", "stopped", "curtailed", "low", "sensor"}
-COLUMNS = {"Power (kW)": "power_kw", "Wind speed (m/s)": "wind_ms", "Rotor speed (RPM)": "rotor_rpm",
-           "Pitch angle (°)": "pitch_deg", "Nacelle position (°)": "nacelle_deg"}
+# Each signal: the demo's column name first, then the pattern for other names, then the names to skip.
+COLUMNS = {
+    "time": ("Date and time", r"date|time", r"$^"),
+    "power_kw": ("Power (kW)", r"power", r"std|dev|min|max|setpoint|limit|reactive|apparent|potential|factor|energy|lost"),
+    "wind_ms": ("Wind speed (m/s)", r"wind ?speed", r"std|dev|min|max|direction|gust"),
+    "rotor_rpm": ("Rotor speed (RPM)", r"rotor", r"std|dev|min|max|temp"),
+    "pitch_deg": ("Pitch angle (°)", r"pitch", r"std|dev|min|max|speed|rate|motor|temp|setpoint"),
+    "nacelle_deg": ("Nacelle position (°)", r"nacelle|yaw", r"std|dev|min|max|temp|ambient|vane"),
+}
 
 
 def predict_day(turbine, day, rows):
@@ -58,27 +67,71 @@ def predict_day(turbine, day, rows):
     return out
 
 
+def iso_time(v):
+    """'2023-07-02 00:10:00' or '02/07/2023 00:10' (UTC) -> '2023-07-02T00:10:00Z'; None if unreadable."""
+    v = v.strip()
+    m = re.match(r"(\d{2})/(\d{2})/(\d{4})[ T](\d{2}):(\d{2})", v)
+    if m:
+        return f"{m[3]}-{m[2]}-{m[1]}T{m[4]}:{m[5]}:00Z"
+    m = re.match(r"(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})", v)
+    return f"{m[1]}T{m[2]}:00Z" if m else None
+
+
+def number(v):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def parse_csv(text, name):
+    """Rows of one turbine's 10-minute CSV. Skips '# ...' comment lines; a comment line with 3+ commas is
+    taken as the header (Greenbyte exports put it there)."""
+    lines, header = text.splitlines(), None
+    while lines and (not lines[0].strip() or lines[0].startswith("#")):
+        if lines[0].count(",") >= 3:
+            header = lines[0].lstrip("#").strip()
+        lines.pop(0)
+    reader = csv.reader(([header] if header else []) + [l for l in lines if l and not l.startswith("#")])
+    cols = [c.strip() for c in next(reader)]
+    pick = {}
+    for key, (exact, inc, exc) in COLUMNS.items():
+        found = [c for c in cols if c == exact] or [c for c in cols if re.search(inc, c, re.I) and not re.search(exc, c, re.I)]
+        if not found:
+            raise SystemExit(f"{name}: no column for {key}; columns are {cols}")
+        pick[key] = cols.index(found[0])
+    rows = []
+    for rec in reader:
+        if len(rec) < len(cols) or not (t := iso_time(rec[pick["time"]])):
+            continue
+        rows.append({"time": t, **{k: number(rec[i]) for k, i in pick.items() if k != "time"}})
+    return rows
+
+
 def load_rows(rows_dir=None):
-    """{turbine: [row, ...]} from a local folder of T01.csv ... T21.csv, or from the demo site."""
+    """{turbine: [row, ...]} from a folder of CSVs (one per turbine), or the demo's Hill of Towie rows."""
     farm = {}
-    for t in TURBINES:
-        if rows_dir:
-            text = (Path(rows_dir) / f"{t}.csv").read_text(encoding="utf-8")
-        else:
+    if rows_dir:
+        files = sorted(Path(rows_dir).glob("*.csv"))
+        if not files:
+            raise SystemExit(f"no .csv files in {rows_dir}")
+        for i, f in enumerate(files):
+            m = re.search(r"(?:turbine|wtg|wt|t)[ _-]?(\d{1,3})", f.stem, re.I)   # the same ids the page gives
+            farm[f"T{int(m[1]) if m else i + 1:02d}"] = parse_csv(f.read_text(encoding="utf-8-sig"), f.name)
+    else:
+        for t in TURBINES:
             with urllib.request.urlopen(f"{SITE}/{t}.csv", timeout=60) as resp:
-                text = resp.read().decode("utf-8")
-        rows = []
-        for rec in csv.DictReader(io.StringIO(text)):
-            row = {"time": rec["Date and time"].replace(" ", "T")[:16] + ":00Z"}
-            for col, key in COLUMNS.items():
-                v = (rec.get(col) or "").strip()
-                row[key] = float(v) if v else None
-            rows.append(row)
-        farm[t] = rows
+                farm[t] = parse_csv(resp.read().decode("utf-8"), f"{t}.csv")
+    power = sorted(r["power_kw"] for rows in farm.values() for r in rows if r["power_kw"] is not None)
+    if power and power[int(0.995 * (len(power) - 1))] > 20000:   # watts, not kilowatts (the page converts too)
+        for rows in farm.values():
+            for r in rows:
+                if r["power_kw"] is not None:
+                    r["power_kw"] /= 1000
     return farm
 
 
-def build_messages(farm):
+def build_messages(farm, farm_key="towie"):
     """Run predict_day over every turbine-day; one windmonitor.model/1 message per step that has answers."""
     by_time = defaultdict(dict)
     for turbine, rows in farm.items():
@@ -90,7 +143,7 @@ def build_messages(farm):
                 if answer.get("status") not in STATUSES:
                     raise ValueError(f"{turbine} {time}: status must be one of {sorted(STATUSES)}")
                 by_time[time][turbine] = answer
-    return [{"schema": "windmonitor.model/1", "farm": "towie", "time": t, "model": MODEL, "turbines": by_time[t]}
+    return [{"schema": "windmonitor.model/1", "farm": farm_key, "time": t, "model": MODEL, "turbines": by_time[t]}
             for t in sorted(by_time)]
 
 
@@ -134,10 +187,12 @@ def serve(messages, port):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Connect a model to the wind farm monitor demo.")
     ap.add_argument("--port", type=int, default=8790)
-    ap.add_argument("--rows", help="local folder with T01.csv ... T21.csv (default: read them from the demo site)")
+    ap.add_argument("--rows", help="folder with one 10-minute CSV per turbine (default: the demo's Hill of Towie rows)")
+    ap.add_argument("--farm", help="the farm the answers are for: towie, or farm1 for the first farm you add on the "
+                                   "page, farm2 for the second (default: towie without --rows, farm1 with it)")
     ap.add_argument("--out", help="write the messages to this .jsonl file instead of serving them")
     args = ap.parse_args()
-    msgs = build_messages(load_rows(args.rows))
+    msgs = build_messages(load_rows(args.rows), args.farm or ("farm1" if args.rows else "towie"))
     if args.out:
         Path(args.out).write_text("\n".join(json.dumps(m, ensure_ascii=False) for m in msgs) + "\n", encoding="utf-8")
         print(f"Wrote {len(msgs)} messages to {args.out}. In the demo: Model feed, then File.")

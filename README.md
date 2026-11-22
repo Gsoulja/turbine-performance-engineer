@@ -9,6 +9,7 @@ TimeNet Online Hackathon, Round 1 · team sololeveling
 - **Pitch slides:** [pitch.html](pitch.html) (←/→ to move, N for speaker notes, F for full screen)
 - **Monitor demo:** [demo/](demo/) (a replay of real data with the models' answers)
 - **Results and limits:** [RESULTS.md](RESULTS.md)
+- **Bring your own data:** in the demo, *Add a farm* loads your own 10-minute SCADA CSVs in the browser, with nothing uploaded (tutorial on the [site](https://turbine-performance-engineer.vercel.app/#own-data))
 - **Connect a model:** [connect/bridge.py](connect/bridge.py) feeds any model's answers into the demo (guide on the [site](https://turbine-performance-engineer.vercel.app/#connect); message contract in [demo/MODEL_FEED.md](demo/MODEL_FEED.md))
 - **Trained models:** [Hugging Face collection](https://huggingface.co/collections/gsoulja/sololeveling-wind-turbine-performance-engineer-6b031e0b75d3cb2072628436)
 - **Dataset in TimeNet:** [OpenTSLM/TimeNet PR #838](https://github.com/OpenTSLM/TimeNet/pull/838)

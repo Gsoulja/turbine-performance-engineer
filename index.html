@@ -298,7 +298,7 @@ footer.end .inner { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-conte
   <div class="inner">
     <div class="head"><p class="eyebrow">The demo</p><h2>The whole loop, in one tool</h2><p>A replay of real turbine data with the models’ answers, each beside its independent checks. Walk the loop: the 3D farm view (detect), “Where did the energy go?” (explain), “Fix first” and the Copilot (act), “Did the fix work?” (verify) and “Real results” (learn). Without satellite imagery, the 3D view uses generated ground. The Copilot runs when the monitor is opened on claude.ai.</p></div>
     <div class="frame demo"><iframe id="demoFrame" src="demo/index.html" title="Wind farm monitor demo" loading="lazy"></iframe></div>
-    <div class="bar"><span class="count">Replay · real data</span><a class="tool" href="demo/index.html" target="_blank" rel="noopener">Open the demo full screen</a><a class="tool" href="#connect">Connect your model</a></div>
+    <div class="bar"><span class="count">Replay · real data</span><a class="tool" href="demo/index.html" target="_blank" rel="noopener">Open the demo full screen</a><a class="tool" href="#own-data">Bring your own data</a><a class="tool" href="#connect">Connect your model</a></div>
     <div class="cards">
       <article><p class="k">Detect · Hill of Towie</p><p>The language model’s daily stop answers, 3–9 July 2023: <b>20 of 25 stops caught, 0 false alarms</b>. The 5 misses were short stops.</p></article>
       <article><p class="k">Curtailment · Hill of Towie</p><p>25–31 May 2025: <b>77 of 84 grid-dispatch turbine-days caught</b>, with 4 false alarms.</p></article>
@@ -308,10 +308,27 @@ footer.end .inner { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-conte
       <article><p class="k">Verify · Turbine 13</p><p>The real before/after series of the AeroUp blade upgrade, with both references.</p></article>
       <article><p class="k">Learn · Real results</p><p>Mark an answer <b>Correct</b>, <b>Wrong cause</b> or <b>Not a problem</b>. It stays pending until independent evidence agrees.</p></article>
     </div>
+    <div class="connect" id="own-data">
+      <div class="subhead"><h3>Bring your own data</h3><p class="small muted">Load your own wind farm into the monitor and run the whole loop on it. Everything happens in your browser: your files are read on your computer and never uploaded, and the farm is gone when you close the tab.</p></div>
+      <ol class="steps">
+        <li><b>Export 10-minute SCADA.</b> One CSV per turbine (<code>WTG01.csv</code>, <code>T02.csv</code> and so on) or one file with a turbine column, up to 30 MB each, with times in UTC. Six signals are needed. No alarm or status codes are read, so any turbine maker works.
+          <pre><code>Date and time,Power (kW),Wind speed (m/s),Rotor speed (RPM),Pitch angle (°),Nacelle position (°)
+2023-07-02 00:00:00,1843.2,11.4,16.9,2.1,301.5</code></pre>
+          <span class="small muted">Other column names are fine: the page matches them, Greenbyte exports included, and you can correct any guess. Power in watts is converted to kW. Two optional signals help: a power limit, which tells curtailment apart from low output, and generator temperature. A full example: <a href="https://turbine-performance-engineer.vercel.app/demo/data/rows/towie/T01.csv" target="_blank" rel="noopener">T01.csv</a> from the demo.</span></li>
+        <li><b>Add the farm.</b> Open the <a href="https://turbine-performance-engineer.vercel.app/demo/" target="_blank" rel="noopener">demo</a>, press <b>Add a farm</b>, enter the name, maker and model, and choose your files. To place the turbines on a map, add a positions CSV; without one, they stand on a grid.
+          <pre><code>turbine,latitude,longitude
+T01,55.9512,-3.1984</code></pre></li>
+        <li><b>Read the readiness check.</b> It lists the turbines (3 or more, to compare neighbours), the period, the time step, the missing values and any odd ranges. Fix anything marked red, check the rated power (filled in from your data), rotor diameter and hub height, then press <b>Add farm and start replay</b>.</li>
+        <li><b>Use it.</b> Your farm appears in the farm list as “your data” and replays straight away: each turbine's state, where the energy went and what to fix first. Until a model answers, the states come from the stand-in rules.</li>
+        <li><b>Add your model's answers.</b> Run the bridge from the next section on the same folder, then open <b>Model feed</b> in the demo, enter <code>http://localhost:8790/latest</code> and press <b>Start polling</b>. The first farm you add is <code>farm1</code> and the next is <code>farm2</code> (<code>--farm farm2</code>).
+          <pre><code>python3 bridge.py --rows my_farm/</code></pre></li>
+      </ol>
+    </div>
+
     <div class="connect" id="connect">
       <div class="subhead"><h3>Connect a model to the demo</h3><p class="small muted">The monitor runs on stand-in rules until a model answers. Any model can take over, ours or yours: it sends one small JSON message per 10-minute step, and the page shows its status, explanation and confidence in place of the rules, turbine by turbine.</p></div>
       <ol class="steps">
-        <li><b>Get the bridge.</b> One Python file, standard library only. It reads the same real Hill of Towie rows the demo replays (2–10 July 2023, 21 turbines).
+        <li><b>Get the bridge.</b> One Python file, standard library only. It reads the same real Hill of Towie rows the demo replays (2–10 July 2023, 21 turbines), or your own files with <code>--rows</code>.
           <pre><code>curl -O https://turbine-performance-engineer.vercel.app/connect/bridge.py</code></pre></li>
         <li><b>Put your model in <code>predict_day()</code>.</b> It receives one turbine-day of 10-minute rows (power, wind speed, rotor speed, pitch and nacelle direction) and returns an answer for each step it covers. It ships with a stand-in rule, so you can test the connection before your model is ready.</li>
         <li><b>Run it.</b>
