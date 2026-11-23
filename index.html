@@ -296,9 +296,9 @@ footer.end .inner { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-conte
 
 <section class="part wrap" id="demo">
   <div class="inner">
-    <div class="head"><p class="eyebrow">The demo</p><h2>The whole loop, in one tool</h2><p>A replay of real turbine data with the models’ answers, each beside its independent checks. Walk the loop: the 3D farm view (detect), “Where did the energy go?” (explain), “Fix first” and the Copilot (act), “Did the fix work?” (verify) and “Real results” (learn). Without satellite imagery, the 3D view uses generated ground. The Copilot runs when the monitor is opened on claude.ai.</p></div>
-    <div class="frame demo"><iframe id="demoFrame" src="demo/index.html" title="Wind farm monitor demo" loading="lazy"></iframe></div>
-    <div class="bar"><span class="count">Replay · real data</span><a class="tool" href="demo/index.html" target="_blank" rel="noopener">Open the demo full screen</a><a class="tool" href="#own-data">Bring your own data</a><a class="tool" href="#connect">Connect your model</a></div>
+    <div class="head"><p class="eyebrow">The demo</p><h2>The whole loop, in one tool</h2><p>A replay of real turbine data with the models’ answers, each beside its independent checks. Walk the loop: the 3D farm view (detect), “Where did the energy go?” (explain), “Fix first” and the Copilot (act), “Did the fix work?” (verify) and “Real results” (learn). <b>To watch the trained model live:</b> choose Hill of Towie, press Replay the real rows and jump to 7 or 9 July. Turbines the stops model flags show its answer and its confidence. The Copilot runs when the monitor is opened on claude.ai.</p></div>
+    <div class="frame demo"><iframe id="demoFrame" src="demo/index.html?model=/feeds/towie-2023-07-stops-model.json" title="Wind farm monitor demo" loading="lazy"></iframe></div>
+    <div class="bar"><span class="count">Replay · real data · real model</span><a class="tool" href="demo/index.html?model=/feeds/towie-2023-07-stops-model.json" target="_blank" rel="noopener">Open the demo full screen</a><a class="tool" href="#own-data">Bring your own data</a><a class="tool" href="#connect">Connect your model</a></div>
     <div class="cards">
       <article><p class="k">Detect · Hill of Towie</p><p>The language model’s daily stop answers, 3–9 July 2023: <b>20 of 25 stops caught, 0 false alarms</b>. The 5 misses were short stops.</p></article>
       <article><p class="k">Curtailment · Hill of Towie</p><p>25–31 May 2025: <b>77 of 84 grid-dispatch turbine-days caught</b>, with 4 false alarms.</p></article>
