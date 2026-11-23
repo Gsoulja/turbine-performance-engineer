@@ -155,7 +155,7 @@ One OpenTSLM model trained on all four questions at once: stops, cause, curtailm
 - A re-test, not a clean check: v2's fixes were designed from v1's misses on these same validation days, and three changes went in at once.
 - One seed. Curtailment is validated on a single grid event.
 - The one-time Hill of Towie comparison for v2 is not scored yet. Until v2 holds there, the separate models stay the answer.
-- v2's weights are not published yet; v1's are on [Hugging Face](https://huggingface.co/gsoulja/Llama-3.2-1B-OpenTSLM-wind-joint).
+- v2's weights are open on [Hugging Face](https://huggingface.co/gsoulja/Llama-3.2-1B-OpenTSLM-wind-joint) (`v2/`), next to v1's.
 
 ## Sources for the problem
 
