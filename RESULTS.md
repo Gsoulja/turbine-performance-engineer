@@ -133,6 +133,30 @@ Faults were injected into real turbine data (a digital twin) so there is a known
   - Its false alarms are fixed: 4.5% of EDP's real ordinary windows flagged. But many losses are now called sensor faults, the most common answer in its training rows.
   - The tree stays the detector for this question.
 
+## One model for every question
+
+One OpenTSLM model trained on all four questions at once: stops, cause, curtailment and running low. **These are validation results, not held-out ones.** Each bar was set before the run.
+
+- **First joint run (v1): failed its gate.** It learned all four questions, but it read calm-wind standstills as stops (53 validation false alarms) and called one storm's weather stops turbine faults. The separate models stayed the answer.
+- **Second joint run (v2, 22 November 2026):** it starts from our confirmed stops model, the cause question reads the signals through its own path (as its separate model does), and calm-wind standstill days count for more in training. One seed, 5 epochs, last-epoch weights, all fixed before the run.
+
+| Validation | v2 | v1 | Separate model | Bar |
+|---|---|---|---|---|
+| Stops: average precision · false alarms (Senvion 2021 H2, 3,070 days) | **0.9876** · 0 | 0.9605 · 53 | 0.9811 · 0 | ≥ 0.9761 |
+| Cause: macro F1 · energy-share error in points (134 stops, threshold 0.35) | **0.850** · 0.4 | 0.701 · 35.5 | 0.855 · 0.7 | ≥ 0.805 · ≤ 5.7 |
+| Curtailment: AUC · caught (one logged grid event, 14 turbine rows) | 0.888 · 5 | 0.890 · 2 | 0.942 · 11 | ≥ 0.89 |
+| Running low: losses found · cause F1 (Fuhrländer) | **0.813** · 0.694 | 0.839 · 0.670 | 0.684 · 0.408 | ≥ 0.654 · ≥ 0.378 |
+
+- **Three of four questions meet their bar.** Stops' false alarms fell from 53 to 0 (136 of 142 stops caught at the 95% alarm level). Storm Arwen's weather stops found: 17 of 21, against 4 for v1. Running low's cause F1 (0.694) is at least the tree's (0.678) on this set for the first time; the tree still finds more losses (0.981).
+- **Curtailment is 0.002 short, and the whole shortfall is one row.** The validation holds one grid event: a farm-wide cut of a single 10-minute step at Penmanshiel on 14 December 2021. Turbine 04 lost the least energy on the farm while its wind was falling, so its dip reads like the wind dropping; the model scored it 0.014. Without that row the AUC would be 0.94; the reported result stays 0.888. The model's six signals don't include the power setpoint, the direct record of a cut, which all three farms log.
+- **As written, the gate is not passed.** It also asked at least one question to beat its separate model with a 95% interval above 0. Stops: +0.0065 average precision, interval −0.002 to +0.023; cause: −0.005. Running low is not like for like with its separate model.
+
+**Limits:**
+- A re-test, not a clean check: v2's fixes were designed from v1's misses on these same validation days, and three changes went in at once.
+- One seed. Curtailment is validated on a single grid event.
+- The one-time Hill of Towie comparison for v2 is not scored yet. Until v2 holds there, the separate models stay the answer.
+- v2's weights are open on [Hugging Face](https://huggingface.co/gsoulja/Llama-3.2-1B-OpenTSLM-wind-joint) (`v2/`), next to v1's.
+
 ## Sources for the problem
 
 - The −9% median and the 14% that meet or beat their estimate: Hendrickson study of European onshore projects (via WindESCo); Hammond & Simley, Wind Energy Science 2026.
