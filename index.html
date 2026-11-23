@@ -227,7 +227,7 @@ footer.end .inner { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-conte
       <span>Turbine Performance Engineer</span>
     </a>
     <nav aria-label="Sections">
-      <a href="#pitch">Pitch</a><a href="#demo">Demo</a><a href="#built">What we built</a><a href="#results">Results</a><a href="#metrics">Metrics</a><a href="#lessons">What we learned</a><a href="#limits">Limits</a><a href="#data">Data</a>
+      <a href="#pitch">Pitch</a><a href="#demo">Demo</a><a href="#built">What we built</a><a href="#results">Results</a><a href="#joint">One model</a><a href="#metrics">Metrics</a><a href="#lessons">What we learned</a><a href="#limits">Limits</a><a href="#data">Data</a>
     </nav>
   </div>
 </header>
@@ -483,6 +483,51 @@ T01,55.9512,-3.1984</code></pre></li>
   </div>
 </section>
 
+<section class="part wrap" id="joint">
+  <div class="inner">
+    <div class="head"><p class="eyebrow">One model for every question</p><h2>One model now answers all four questions</h2><p>Each result above comes from a model trained for that one question. We want one model that answers them all, so every new farm and every new question trains the same model. Our second joint run, v2, trained on 22 November. On validation it meets its pre-set bar for stops, cause and running low, and misses curtailment by 0.002 AUC on a single event. These numbers are validation results, not held-out ones. The weights aren’t published yet; v1’s are on <a href="https://huggingface.co/gsoulja/Llama-3.2-1B-OpenTSLM-wind-joint" target="_blank" rel="noopener">Hugging Face</a>.</p></div>
+
+    <div class="q">
+      <div class="stack">
+        <span class="tag short">3 of 4 bars met · gate not passed yet</span>
+        <h3>v2 against v1 and the separate models, on validation</h3>
+        <p>Our first joint run, v1, learned all four questions but broke two of them. It read calm-wind standstills as stops (53 false alarms), and it called one storm’s weather stops turbine faults. v2 changes three things. It starts from our confirmed stops model instead of from scratch. The cause question reads the signals through its own path, as its separate model does. And calm-wind standstill days count for more in training.</p>
+        <p>Stops’ false alarms fell from 53 to 0. Of Storm Arwen’s 21 weather stops, it found 17, against 4 for v1. For running low, the cause of a loss now scores 0.694, at least the tree’s 0.678 on the same set for the first time. The tree still finds more losses.</p>
+      </div>
+      <div class="stack">
+        <div class="tablewrap"><table>
+          <thead><tr><th>Validation, bar set before the run</th><th class="n">v2</th><th class="n">v1</th><th class="n">Separate model</th><th class="n">Bar</th></tr></thead>
+          <tbody>
+            <tr><td>Stops: average precision · false alarms</td><td class="n"><b>0.9876</b> · 0</td><td class="n">0.9605 · 53</td><td class="n">0.9811 · 0</td><td class="n">≥ 0.9761</td></tr>
+            <tr><td>Cause: macro F1 · energy-share error</td><td class="n"><b>0.850</b> · 0.4 pts</td><td class="n">0.701 · 35.5</td><td class="n">0.855 · 0.7</td><td class="n">≥ 0.805 · ≤ 5.7</td></tr>
+            <tr><td>Curtailment: AUC · caught of 14</td><td class="n">0.888 · 5</td><td class="n">0.890 · 2</td><td class="n">0.942 · 11</td><td class="n">≥ 0.89</td></tr>
+            <tr><td>Running low: losses found · cause F1</td><td class="n"><b>0.813</b> · 0.694</td><td class="n">0.839 · 0.670</td><td class="n">0.684 · 0.408</td><td class="n">≥ 0.654 · ≥ 0.378</td></tr>
+          </tbody>
+        </table></div>
+        <p class="small muted">Stops: 3,070 Senvion days of 2021 H2; 136 of 142 stops caught at the alarm level that catches 95% of them. Cause: 134 stops of 2021 H2, threshold 0.35 fixed before the run. Curtailment: one logged grid event, 14 turbine rows. Running low: a Fuhrländer farm; its separate model was trained differently, so that row is not like for like. One seed, last-epoch weights, epoch count fixed before the run.</p>
+      </div>
+    </div>
+
+    <div class="q">
+      <div class="stack">
+        <span class="tag short">0.002 short, on one event</span>
+        <h3>Curtailment: the whole shortfall is one turbine on one date</h3>
+        <p>Curtailment’s validation holds one logged grid event: a farm-wide cut of a single 10-minute step at Penmanshiel on 14 December 2021. 13 of its 14 turbine rows score the same as in v1 or higher. The 14th is turbine 04. It lost the least energy on the farm, and its wind was falling at the time, so its dip looks like the wind dropping. The model scored it 0.014. Without that row the AUC would be 0.94, but the result we report is 0.888.</p>
+        <p>More training data of the same kind won’t fix it: the synthetic cuts we train on already include many single-step cuts, some during a fall in wind. What the model lacks is the power setpoint, the turbine’s own record of the cut, which all three farms log.</p>
+      </div>
+      <div class="stack">
+        <h3>What v2 doesn’t show yet</h3>
+        <ul class="next">
+          <li><b>A margin</b><span>The gate also asked at least one question to beat its separate model with a 95% interval above 0. Stops: +0.0065 average precision, interval −0.002 to +0.023. Cause: −0.005. Not shown, so, as written, the gate is not passed.</span></li>
+          <li><b>A clean test</b><span>v2’s fixes were designed from v1’s misses on these same validation days, so this is a re-test. Three changes went in at once, so no single one gets the credit.</span></li>
+          <li><b>A new farm</b><span>The one-time Hill of Towie comparison for v2 is not scored yet. Until v2 holds there, the separate models stay the answer.</span></li>
+          <li><b>Next</b><span>The power setpoint as an input, a curtailment validation with many grid events instead of one date, more seeds, and more farms and makers in one model.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="part wrap" id="metrics">
   <div class="inner">
     <div class="head"><p class="eyebrow">Training and metrics</p><h2>How the models trained, and how they score</h2><p>The charts from our published models. Every number was re-derived from the saved predictions and matches the results above. The weights and model cards are open on <a href="https://huggingface.co/collections/gsoulja/sololeveling-wind-turbine-performance-engineer-6b031e0b75d3cb2072628436" target="_blank" rel="noopener">Hugging Face</a>.</p></div>
@@ -497,6 +542,7 @@ T01,55.9512,-3.1984</code></pre></li>
       <figure class="fig"><img src="media/charts/curtailment_evaluation.png" alt="ROC, precision-recall and confusion matrix for curtailment on Hill of Towie 2025-26" loading="lazy"><figcaption><span class="k">Curtailment · Hill of Towie 2025–26 (fell short of its bar)</span>ROC AUC 0.789, average precision 0.318; 188 of 768 dispatch days caught at the validation alarm level. The gradient-boosting detector caught 742. <a href="https://huggingface.co/gsoulja/Llama-3.2-1B-OpenTSLM-wind-curtailment" target="_blank" rel="noopener">Model card</a></figcaption></figure>
       <figure class="fig"><img src="media/charts/runninglow_loss_size.png" alt="Scatter of the running-low model's loss size against the injected truth on EDP, two runs" loading="lazy"><figcaption><span class="k">Running low · size of the loss on EDP</span>Run 1: <b>Pearson r 0.858, RMSE 2.28, MAE 1.44</b> percentage points (loss windows only: 0.786 / 2.65 / 1.95). Run 2: 0.616 / 3.57 / 2.00. <a href="https://huggingface.co/gsoulja/Llama-3.2-1B-OpenTSLM-wind-running-low" target="_blank" rel="noopener">Model card</a></figcaption></figure>
       <figure class="fig"><img src="media/charts/joint_training.png" alt="Joint model v1: training and validation loss per epoch, validation loss by question, and per-step training loss" loading="lazy"><figcaption><span class="k">One model for every question · v1 training</span>The average validation loss fell every epoch while the cause loss rose after epoch 1, and stops' loss stayed low while its false alarms rose: the average hid both problems. <a href="https://huggingface.co/gsoulja/Llama-3.2-1B-OpenTSLM-wind-joint" target="_blank" rel="noopener">Model card</a></figcaption></figure>
+      <figure class="fig"><img src="media/charts/joint_v2_training.png" alt="Joint model v2: training and validation loss per epoch, validation loss by question against v1, and per-step training loss" loading="lazy"><figcaption><span class="k">One model for every question · v2 training</span>Started from the stops model, so stops’ validation loss starts low and ends at 0.0058 (v1: 0.0144). Cause’s fell to 0.078 at epoch 3 and rose to 0.135 by epoch 5 (v1: 0.237). Epoch 5 was fixed before the run, not picked on these days. <a href="#joint">Gate result</a></figcaption></figure>
     </div>
   </div>
 </section>
@@ -548,7 +594,7 @@ T01,55.9512,-3.1984</code></pre></li>
         <div class="ev"><b>47 / 53</b><span>false alarms of the one-for-all model that were calm-wind standstills</span></div>
         <div class="stack">
           <h3>One model for every question must agree on what a picture means</h3>
-          <p>We trained one model on all four questions at once. It learned them all, and curtailment even improved on the new farm: 570 of 768 grid-dispatch days caught, against 188 for its separate model, clearing the bars we set for that test (one seed). But stops and cause fell short of their pre-set bars. For the stops question, a turbine standing still in calm wind is not downtime; the shared model started counting those standstills as stops, probably because the cause question trains on stops at any wind. It also called one storm’s weather stops turbine faults. The separate models stay the answer while we fix the clashes, and we now check each question’s own score during training, because the average loss hid the problem.</p>
+          <p>We trained one model on all four questions at once. It learned them all, and curtailment even improved on the new farm: 570 of 768 grid-dispatch days caught, against 188 for its separate model, clearing the bars we set for that test (one seed). But stops and cause fell short of their pre-set bars. For the stops question, a turbine standing still in calm wind is not downtime; the shared model started counting those standstills as stops, probably because the cause question trains on stops at any wind. It also called one storm’s weather stops turbine faults. We now check each question’s own score during training, because the average loss hid the problem. Our second run started from the stops model. On the same validation days its false alarms fell to 0, and it found 17 of the storm’s 21 weather stops (<a href="#joint">one model</a>).</p>
         </div>
       </article>
     </div>
@@ -608,8 +654,9 @@ T01,55.9512,-3.1984</code></pre></li>
 <section class="part wrap" id="next">
   <div class="inner">
     <div class="head"><p class="eyebrow">Next</p><h2>From a proven loop to every farm</h2></div>
-    <p class="status" style="margin-bottom:18px"><span class="dot" aria-hidden="true"></span>One model for every question: our first run trained a single model on stops, cause, curtailment and running low. It learned all four, but two questions fell short of their pre-set bars, so the separate models stay the answer while we fix the clashes (see what we learned).</p>
+    <p class="status" style="margin-bottom:18px"><span class="dot" aria-hidden="true"></span>One model for every question: our second joint run answers all four questions and meets its pre-set bar for three of them on validation. Curtailment is 0.002 short, on one event. It replaces the separate models once it holds on Hill of Towie and beats them by a clear margin (<a href="#joint">one model</a>).</p>
     <ul class="next">
+      <li><b>One model</b><span>The power setpoint as an input for curtailment, validation with many grid events, more seeds, and the one-time Hill of Towie test.</span></li>
       <li><b>Robustness</b><span>Training with a signal dropped at random, so a missing sensor doesn’t break the answer.</span></li>
       <li><b>New makers</b><span>A second new maker: EDP, then Princess Amalia (Vestas, offshore), sealed until it is scored.</span></li>
       <li><b>Running low</b><span>The cause of a running-low loss, trained and tested like the others.</span></li>
@@ -629,6 +676,7 @@ T01,55.9512,-3.1984</code></pre></li>
         <tr><td><b>Cause</b></td><td>At home the tree is the answer: the language model scored 0.518 against 0.918 on Kelmarsh 2016–18. The unseen-maker result is one Siemens farm. Its labels come from the controller’s stop timers, whose meaning isn’t officially documented, and there is no maintenance class, so “turbine side” means faults only. Both models call about half the turbine-side stops during storms “weather”; part of that is a labelling difference.</td></tr>
         <tr><td><b>Fix check</b></td><td>Turbine 13 is not confirmed by our bar. December’s baseline already contains October 2021, after the install, so it slightly understates the gain.</td></tr>
         <tr><td><b>Running low</b></td><td>Tested on injected faults; real running-low faults have no ground truth. The language model failed its validation bar twice, and the rule-based detector failed its Hill of Towie test.</td></tr>
+        <tr><td><b>One model</b></td><td>v2’s result is a re-test on the validation days its fixes were designed from, with one seed. It doesn’t yet beat the separate models with an interval above 0. Curtailment is validated on a single grid event. It hasn’t been tested on Hill of Towie.</td></tr>
       </tbody>
     </table></div>
   </div>
